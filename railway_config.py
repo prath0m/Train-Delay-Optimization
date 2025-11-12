@@ -1,6 +1,3 @@
-# Enhanced Railway Configuration
-# This file contains all the configurable parameters for the train delay optimization system
-
 import json
 from datetime import datetime, timedelta
 from typing import Dict, List

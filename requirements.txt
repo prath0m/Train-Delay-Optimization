@@ -1,0 +1,8 @@
+# Train Delay Optimization System - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core optimization library
+ortools>=9.8.3296
+
+# Numerical computations
+numpy>=1.24.0

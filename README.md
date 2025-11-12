@@ -14,36 +14,63 @@ Train delay optimization/
 
 ## 🚀 How to Run the System
 
-### **Step 1: Activate Virtual Environment**
+### **Step 1: Navigate to Project Directory**
 ```bash
-cd "/Users/prathameshkale/Train delay optimization"
-source .venv/bin/activate
+cd "/Users/prathameshkale/Documents/Train delay optimization"
 ```
 
-### **Step 2: Run the Enhanced Optimization System**
+### **Step 2: Install Dependencies (First Time Only)**
 ```bash
-python complete_enhanced_system.py
+./venv/bin/pip install -r requirements.txt
 ```
+
+### **Step 3: Run the Optimization System**
+```bash
+./venv/bin/python complete_enhanced_system.py
+```
+
+The system will prompt you for:
+1. **Delay Factor** (0.0 to 2.0): Controls how much weather/maintenance impacts trains
+   - `0.0` = No delays (ideal conditions)
+   - `0.5` = 50% reduced delays
+   - `1.0` = Normal delays (default)
+2. **Scenario Selection** (1-4): Choose the weather season
+   - `1` = Monsoon Season (July)
+   - `2` = Winter Fog Season (January)
+   - `3` = Summer Heat Season (April)
+   - `4` = Normal Season (October)
 
 ### **Step 3: View Results**
 The system will:
 - Display comprehensive optimization results on screen
-- Generate JSON results file: `optimization_results_YYYY_MM_DD.json`
-- Show operational recommendations
+- Generate JSON results file: `optimization_results_YYYY_MM_DD_delay_X.X.json`
+- Show train-by-train schedules with delay breakdowns
+- Provide operational recommendations
 
-## 🎯 Quick Test Run
+## 🎯 Quick Test Examples
 
-To quickly test the system:
-
+### **Example 1: Test with No Delays (Ideal Conditions)**
 ```bash
-# Navigate to project directory
-cd "/Users/prathameshkale/Train delay optimization"
+cd "/Users/prathameshkale/Documents/Train delay optimization"
+echo -e "0.0\n1" | ./venv/bin/python complete_enhanced_system.py
+```
 
-# Activate virtual environment  
-source .venv/bin/activate
+### **Example 2: Test with 30% Delays (Monsoon)**
+```bash
+cd "/Users/prathameshkale/Documents/Train delay optimization"
+echo -e "0.3\n1" | ./venv/bin/python complete_enhanced_system.py
+```
 
-# Run the optimization
-python complete_enhanced_system.py
+### **Example 3: Test with Normal Delays (Winter Fog)**
+```bash
+cd "/Users/prathameshkale/Documents/Train delay optimization"
+echo -e "1.0\n2" | ./venv/bin/python complete_enhanced_system.py
+```
+
+### **Example 4: Test with Double Delays (Severe Monsoon)**
+```bash
+cd "/Users/prathameshkale/Documents/Train delay optimization"
+echo -e "2.0\n1" | ./venv/bin/python complete_enhanced_system.py
 ```
 
 ## 📊 Expected Output
@@ -55,7 +82,29 @@ The system will display:
    Comprehensive modeling of weather, maintenance, and operational factors
 ================================================================================
 
-🗓️  Testing Scenario: July 15, 2024
+⚙️  CUSTOM DELAY CONFIGURATION
+Enter delay factor (0.0 to 2.0):
+  • 0.0 = No delays (ideal conditions)
+  • 0.5 = 50% reduced delays
+  • 1.0 = Normal delays (default)
+  • 1.5 = 50% increased delays
+  • 2.0 = Double delays (severe conditions)
+
+Delay Factor [default: 1.0]: 0.3
+
+✅ Using delay factor: 0.3
+
+📅 SELECT SCENARIO:
+  1. Monsoon Season (July)
+  2. Winter Fog Season (January)
+  3. Summer Heat Season (April)
+  4. Normal Season (October)
+
+Select scenario [1-4, default: 1]: 1
+
+🗓️  Selected Scenario: July 15, 2024
+🎚️  Delay Multiplier: 0.3x
+================================================================================
 🚂 Enhanced Indian Railway Delay Optimization
 📅 Scenario Date: July 15, 2024
 🌦️  Weather Season: Monsoon
@@ -93,25 +142,39 @@ Solving optimization problem...
    Premium Train Performance: Good
 
 🚂 OPTIMIZED TRAIN SCHEDULES
-[Detailed train-by-train schedules with arrival/departure times]
+--------------------------------------------------------------------------------
+12301_Howrah_Rajdhani
+Type: Superfast, Priority: 5.0, Total Delay: 0 min
+  Station_C                 | Arr: 00:00 | Dep: 06:00 | Dwell:  0min | Delay:   0min 🟢
+  Station_A                 | Arr: 06:45 | Dep: 07:45 | Dwell: 60min | Delay:   0min 🟢
+  [... more stations ...]
 
 💡 OPERATIONAL RECOMMENDATIONS
-[Infrastructure and operational improvement suggestions]
+--------------------------------------------------------------------------------
+🚧 BOTTLENECK: 3 single track sections
+   • Priority: Double tracking of Lonavala-Junction_Z section
+   • Add additional crossing loops
+   • Implement automatic block signaling
+
+📁 Results exported to 'optimization_results_2024_07_15_delay_0.3.json'
 ```
 
 ## ⚙️ Customization Options
 
+### **Adjust Delay Factor**
+The system now supports a custom delay factor (0.0 to 2.0) that scales all weather and maintenance delays:
+- **0.0**: Ideal conditions, no weather/maintenance impacts
+- **0.5**: Reduced impact (50% of normal)
+- **1.0**: Normal conditions (default)
+- **1.5**: Increased impact (50% more than normal)
+- **2.0**: Severe conditions (double impact)
+
 ### **Change Weather Scenario**
-Edit `complete_enhanced_system.py`, line ~545:
-```python
-# Test different seasons
-scenarios = [
-    datetime(2024, 7, 15),   # Monsoon season
-    datetime(2024, 1, 15),   # Winter fog season  
-    datetime(2024, 4, 15),   # Summer heat season
-    datetime(2024, 10, 15)   # Normal season
-]
-```
+Select from 4 seasonal scenarios when running:
+1. **Monsoon (July)**: Heavy rain impacts on steep sections
+2. **Winter (January)**: Fog restrictions on flat sections
+3. **Summer (April)**: Heat-related track expansion effects
+4. **Normal (October)**: Clear weather conditions
 
 ### **Modify Train Fleet**
 Edit the `self.trains` list in `complete_enhanced_system.py` around line ~75 to add/remove trains.
@@ -119,8 +182,11 @@ Edit the `self.trains` list in `complete_enhanced_system.py` around line ~75 to 
 ### **Update Station Configuration**
 Modify the `self.station_config` dictionary around line ~130 to change platform counts, facilities, etc.
 
-### **Adjust Weather Conditions**
-Edit `railway_config.py` to modify weather impact parameters for different seasons.
+### **Adjust Weather Impact Parameters**
+Edit the `_get_weather_scenario()` method around line ~162 to change:
+- Speed reduction percentages
+- Additional time delays
+- Affected track sections
 
 ## 🔧 System Requirements
 
@@ -159,25 +225,40 @@ Edit `railway_config.py` to modify weather impact parameters for different seaso
 
 ## 🆘 Troubleshooting
 
-### **If you get import errors:**
+### **Issue: "No module named 'ortools'"**
 ```bash
-# Reinstall required packages
-pip install ortools numpy
+# Install required packages from requirements.txt
+./venv/bin/pip install -r requirements.txt
 ```
 
-### **If virtual environment issues:**
+### **Issue: "zsh: command not found: python"**
+```bash
+# Use the virtual environment's Python directly
+./venv/bin/python complete_enhanced_system.py
+```
+
+### **Issue: "No feasible solution found"**
+This can happen when delay factors are too high (> 0.5) and create conflicting constraints. Try:
+- Reducing the delay factor (use 0.0 to 0.5 range)
+- Selecting a different season scenario
+- The system works best with delay factors ≤ 0.3
+
+### **Issue: Virtual environment not found**
 ```bash
 # Recreate virtual environment
-python -m venv .venv
-source .venv/bin/activate
-pip install ortools numpy
+python3 -m venv venv
+./venv/bin/pip install -r requirements.txt
 ```
 
-### **For permission errors:**
+### **Issue: Permission denied**
 ```bash
 # Make script executable
 chmod +x complete_enhanced_system.py
 ```
+
+### **Issue: Output shows "all delay 0 min"**
+- If using delay factor 0.0, this is expected (ideal conditions)
+- For higher factors, check that you selected a scenario with weather impacts (option 1-3, not 4)
 
 ## 📞 Support
 

@@ -315,19 +315,15 @@ class EnhancedIndianRailwayOptimizer:
                 section_key = f"{from_station}_to_{to_station}"
                 weather_conditions = self.weather_scenarios.get("conditions", {})
                 
-                # Calculate MINIMUM travel time INCLUDING weather delays
                 min_travel_time = base_time
                 weather_additional = 0
                 
                 if section_key in weather_conditions:
                     weather_additional = int(weather_conditions[section_key]["additional_time"] * self.custom_delay_factor)
-                    # Priority trains get 50% reduction in weather impact
                     if train["type"] in [TrainType.SUPERFAST, TrainType.EXPRESS]:
                         weather_additional = int(weather_additional * 0.5)
-                    # ENFORCE weather delays by adding to minimum time
                     min_travel_time = base_time + weather_additional
                 
-                # Allow some flexibility for operational variations
                 if train["type"] in [TrainType.FREIGHT, TrainType.GOODS]:
                     flexibility_multiplier = 1.3  # Minimal flex for freight (was 2.0)
                 else:
@@ -335,12 +331,10 @@ class EnhancedIndianRailwayOptimizer:
                 
                 max_travel_time = int(min_travel_time * flexibility_multiplier) + 10  # Only 10 min buffer (was 60)
                 
-                # Travel time variable with weather-adjusted minimum
                 actual_travel_time = self.model.NewIntVar(
                     min_travel_time, max_travel_time, 
                     f"travel_{train_id}_{from_station}_{to_station}")
                 
-                # CRITICAL: Enforce minimum travel time includes weather delays
                 self.model.Add(actual_travel_time >= min_travel_time)
                 
                 self.model.Add(
@@ -484,38 +478,28 @@ class EnhancedIndianRailwayOptimizer:
                         
                         intervals.append((interval, train))
             
-            # No overlap constraint with priority ordering
             if intervals:
-                # Add no-overlap for the interval variables
                 interval_vars = [interval for interval, _ in intervals]
                 self.model.AddNoOverlap(interval_vars)
                 
-                # Add priority-based ordering constraints
-                # Higher priority trains should not wait for lower priority trains
                 trains_on_track = [train for _, train in intervals]
                 for i, train1 in enumerate(trains_on_track):
                     for j, train2 in enumerate(trains_on_track):
                         if i >= j:
                             continue
                         
-                        # If train1 has higher priority than train2
                         if train1["priority"] > train2["priority"]:
-                            # Get the relevant stations for both trains
                             train1_route = train1["route"]
                             train2_route = train2["route"]
                             
-                            # Check if trains are moving in the same direction on this section
                             train1_from_idx = train1_route.index(from_station) if from_station in train1_route else -1
                             train1_to_idx = train1_route.index(to_station) if to_station in train1_route else -1
                             train2_from_idx = train2_route.index(from_station) if from_station in train2_route else -1
                             train2_to_idx = train2_route.index(to_station) if to_station in train2_route else -1
                             
-                            # Both trains use this section in forward direction
                             if (train1_from_idx >= 0 and train1_to_idx == train1_from_idx + 1 and
                                 train2_from_idx >= 0 and train2_to_idx == train2_from_idx + 1):
                                 
-                                # Higher priority train should depart first or much later
-                                # Create a choice: either train1 goes first, or train2 goes WAY ahead
                                 priority_order = self.model.NewBoolVar(
                                     f"priority_order_{train1['id']}_{train2['id']}_{from_station}_{to_station}"
                                 )
@@ -523,14 +507,11 @@ class EnhancedIndianRailwayOptimizer:
                                 min_separation = 10  # Minimum separation in minutes
                                 large_gap = 120  # If lower priority goes first, high priority waits long
                                 
-                                # If priority_order is true: train1 departs before train2 with min separation
                                 self.model.Add(
                                     self.time_vars[train1["id"]]["departure"][from_station] + min_separation <=
                                     self.time_vars[train2["id"]]["departure"][from_station]
                                 ).OnlyEnforceIf(priority_order)
                                 
-                                # If priority_order is false: train2 must finish WAY before train1 starts
-                                # This discourages the solver from making high-priority trains wait
                                 self.model.Add(
                                     self.time_vars[train2["id"]]["arrival"][to_station] + large_gap <=
                                     self.time_vars[train1["id"]]["departure"][from_station]
@@ -549,17 +530,13 @@ class EnhancedIndianRailwayOptimizer:
             if len(station_trains) < 2:
                 continue
             
-            # Sort trains by priority (highest first)
             station_trains_sorted = sorted(station_trains, key=lambda t: t["priority"], reverse=True)
             
             for i, train1 in enumerate(station_trains_sorted):
                 for train2 in station_trains_sorted[i+1:]:
-                    # train1 has higher priority than train2
                     priority_diff = train1["priority"] - train2["priority"]
                     
-                    # If priority difference is significant (>= 0.5), enforce strict ordering
                     if priority_diff >= 0.5:
-                        # Create a boolean: does train1 depart before train2?
                         train1_first = self.model.NewBoolVar(
                             f"priority_order_{train1['id']}_before_{train2['id']}_{station}"
                         )
@@ -567,19 +544,16 @@ class EnhancedIndianRailwayOptimizer:
                         min_sep = self.operational_constraints["crossing_rules"]["minimum_separation"]
                         large_gap = 90  # If lower-priority train goes first, high-priority waits 90 min
                         
-                        # If train1 goes first (preferred): train1 departs at least min_sep before train2
                         self.model.Add(
                             self.time_vars[train1["id"]]["departure"][station] + min_sep <=
                             self.time_vars[train2["id"]]["departure"][station]
                         ).OnlyEnforceIf(train1_first)
                         
-                        # If train2 goes first (discouraged): train2 must finish and leave WAY before train1
                         self.model.Add(
                             self.time_vars[train2["id"]]["departure"][station] + large_gap <=
                             self.time_vars[train1["id"]]["arrival"][station]
                         ).OnlyEnforceIf(train1_first.Not())
             
-            # Original overtaking rules (still useful for same-priority trains)
             for i, train1 in enumerate(station_trains):
                 for train2 in station_trains[i+1:]:
                     type1 = train1["type"].value
@@ -596,7 +570,6 @@ class EnhancedIndianRailwayOptimizer:
                         ).OnlyEnforceIf(overtake)
     
     def add_no_waiting_for_lower_priority_constraints(self):
-        """Prevent higher-priority trains from being delayed by lower-priority trains"""
         
         for station in self.stations:
             if station not in self.station_config:
@@ -609,35 +582,27 @@ class EnhancedIndianRailwayOptimizer:
             
             for i, train_high in enumerate(station_trains_sorted):
                 for train_low in station_trains_sorted[i+1:]:
-                    # train_high has HIGHER priority than train_low
                     if train_high["priority"] <= train_low["priority"]:
                         continue
                     
-                    # Get the route indices to check if they overlap
                     if station not in train_high["route"] or station not in train_low["route"]:
                         continue
                     
                     high_idx = train_high["route"].index(station)
                     low_idx = train_low["route"].index(station)
                     
-                    # Only if both trains pass through the same station
                     if high_idx < 0 or low_idx < 0:
                         continue
                     
-                    # High-priority train should depart before low-priority train
-                    # OR depart much later (not wait for it)
                     choice_var = self.model.NewBoolVar(
                         f"high_departs_first_{train_high['id']}_{train_low['id']}_{station}"
                     )
                     
-                    # Option 1: High-priority departs before low-priority (preferred)
                     self.model.Add(
                         self.time_vars[train_high["id"]]["departure"][station] <=
                         self.time_vars[train_low["id"]]["departure"][station]
                     ).OnlyEnforceIf(choice_var)
                     
-                    # Option 2: High-priority departs MUCH later (not waiting)
-                    # This effectively makes Option 1 preferred
                     large_separation = 120
                     self.model.Add(
                         self.time_vars[train_high["id"]]["departure"][station] >=
@@ -732,15 +697,12 @@ class EnhancedIndianRailwayOptimizer:
                 else:
                     weight = 5  # Lower penalty for Freight delays
                 
-                # Use exponential scaling based on priority to heavily favor high-priority trains
                 delay_penalty += total_delay * int(priority * priority * weight * 100)
                 
-                # NEW: Penalize excessive dwell times (extra waits)
                 min_dwell = self._get_minimum_dwell_time(train, station)
                 actual_dwell = self.time_vars[train_id]["dwell"][station]
                 extra_dwell = self.model.NewIntVar(0, 480, f"extra_dwell_{train_id}_{station}")
                 self.model.Add(extra_dwell >= actual_dwell - min_dwell)
-                # Higher priority trains get exponential penalty for waiting
                 dwell_penalty += extra_dwell * int(priority * priority * 50)
         
         for train in self.trains:

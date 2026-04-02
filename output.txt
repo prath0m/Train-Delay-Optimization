@@ -19,12 +19,12 @@ SELECT SCENARIO:
   2. Winter Fog Season (January)
   3. Summer Heat Season (April)
   4. Normal Season (October)
-
+ 
 Select scenario [1-4, default: 1]: 
 
 Selected Scenario: July 15, 2024
 Delay Multiplier: 1.0x
-================================================================================
+============================================================
 
 ============================================================
 Enhanced Indian Railway Delay Optimization

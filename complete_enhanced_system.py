@@ -33,34 +33,50 @@ class EnhancedIndianRailwayOptimizer:
             "Station_G", "H_Loop", "Station_D", "Junction_Y"
         ]
         
+        # Track network based on diagram - accurate layout with bottleneck identification
         self.tracks = [
+            # Main line: Karjat to Station C (freight entry)
+            {"from": "Karjat_Hold_Point", "to": "Station_C", "length_km": 8, "tracks": 2, 
+             "min_travel_time": 8, "gradient": "level", "electrified": True, "bottleneck": False},
+            
+            # Section 1: Station C to Station J (double track, level)
             {"from": "Station_C", "to": "Station_A", "length_km": 18, "tracks": 2, 
-             "min_travel_time": 15, "gradient": "level", "electrified": True},
-            {"from": "Station_A", "to": "Station_J", "length_km": 19, "tracks": 2,
-             "min_travel_time": 16, "gradient": "level", "electrified": True},
+             "min_travel_time": 15, "gradient": "level", "electrified": True, "bottleneck": False},
+            {"from": "Station_A", "to": "Station_J", "length_km": 18, "tracks": 2,
+             "min_travel_time": 15, "gradient": "level", "electrified": True, "bottleneck": False},
             
+            # Section 2: Critical bottleneck - steep climb with single track
             {"from": "Station_J", "to": "Lonavala_Hold_Point", "length_km": 25, "tracks": 1,
-             "min_travel_time": 45, "gradient": "steep_climb", "electrified": True},
-            {"from": "Lonavala_Hold_Point", "to": "Junction_Z", "length_km": 8, "tracks": 1,
-             "min_travel_time": 12, "gradient": "steep_climb", "electrified": True},
+             "min_travel_time": 45, "gradient": "steep_climb", "electrified": True, "bottleneck": True,
+             "crossing_loops": 2, "max_hourly_capacity": 4},
             
-            # Junction and branch sections
-            {"from": "Junction_Z", "to": "Station_B", "length_km": 15, "tracks": 2,
-             "min_travel_time": 12, "gradient": "level", "electrified": True},
+            # Section 3: CRITICAL BOTTLENECK - steep climb with single track (bridged section)
+            {"from": "Lonavala_Hold_Point", "to": "Junction_Z", "length_km": 7, "tracks": 1,
+             "min_travel_time": 12, "gradient": "steep_climb", "electrified": True, "bottleneck": True,
+             "crossing_loops": 3, "max_hourly_capacity": 6, "notes": "Bridged section - highest priority for capacity"},
+            
+            # Section 4: Junction Z to Station B (main double track)
+            {"from": "Junction_Z", "to": "Station_B", "length_km": 12, "tracks": 2,
+             "min_travel_time": 10, "gradient": "level", "electrified": True, "bottleneck": False},
+            
+            # Section 5: Branch line - double track
             {"from": "Station_B", "to": "Junction_X", "length_km": 9, "tracks": 2,
-             "min_travel_time": 8, "gradient": "level", "electrified": True},
+             "min_travel_time": 8, "gradient": "level", "electrified": True, "bottleneck": False},
             {"from": "Junction_X", "to": "Station_G", "length_km": 11, "tracks": 2,
-             "min_travel_time": 9, "gradient": "level", "electrified": True},
+             "min_travel_time": 9, "gradient": "level", "electrified": True, "bottleneck": False},
             
-            # Loop and branch lines
+            # Section 6: Branch line - single track loops
             {"from": "Station_G", "to": "H_Loop", "length_km": 7, "tracks": 1,
-             "min_travel_time": 10, "gradient": "level", "electrified": True},
-            {"from": "H_Loop", "to": "Station_D", "length_km": 14, "tracks": 2,
-             "min_travel_time": 11, "gradient": "level", "electrified": True},
+             "min_travel_time": 10, "gradient": "level", "electrified": True, "bottleneck": True,
+             "crossing_loops": 1, "max_hourly_capacity": 4},
             
-            # Freight connection
-            {"from": "Karjat_Hold_Point", "to": "Station_C", "length_km": 12, "tracks": 2,
-             "min_travel_time": 20, "gradient": "level", "electrified": True},
+            # Section 7: Loop to Station D
+            {"from": "H_Loop", "to": "Station_D", "length_km": 14, "tracks": 2,
+             "min_travel_time": 12, "gradient": "level", "electrified": True, "bottleneck": False},
+            
+            # Additional connections (from diagram)
+            {"from": "Station_D", "to": "Junction_Y", "length_km": 9, "tracks": 2,
+             "min_travel_time": 8, "gradient": "level", "electrified": True, "bottleneck": False},
         ]
         
         self.trains = [
@@ -103,38 +119,81 @@ class EnhancedIndianRailwayOptimizer:
         
         # Station characteristics and facilities
         self.station_config = {
+            "Karjat_Hold_Point": {
+                "type": "freight_terminal", "platforms": 2, "loops": 4, "freight_yards": 4,
+                "crew_change": False, "maintenance_depot": False, "water_column": True,
+                "dwell_times": {"superfast": 0, "express": 0, "passenger": 0, "freight": 20, "goods": 25},
+                "notes": "Freight entry point"
+            },
             "Station_C": {
-                "type": "major_junction", "platforms": 6, "loops": 4, "freight_yards": 2,
+                "type": "major_junction", "platforms": 6, "loops": 4, "freight_yards": 3,
                 "crew_change": True, "maintenance_depot": True, "water_column": True,
-                "dwell_times": {"superfast": 3, "express": 4, "passenger": 6, "freight": 15}
+                "dwell_times": {"superfast": 3, "express": 4, "passenger": 6, "freight": 15, "mail_express": 4},
+                "notes": "Major hub - prioritize through traffic"
             },
             "Station_A": {
-                "type": "intermediate_major", "platforms": 4, "loops": 3, "freight_yards": 1,
+                "type": "intermediate_major", "platforms": 4, "loops": 3, "freight_yards": 2,
                 "crew_change": False, "maintenance_depot": False, "water_column": True,
-                "dwell_times": {"superfast": 2, "express": 3, "passenger": 4, "freight": 10}
+                "dwell_times": {"superfast": 2, "express": 3, "passenger": 4, "freight": 10, "mail_express": 2},
+                "notes": "Intermediate stop"
             },
             "Station_J": {
-                "type": "grade_change_point", "platforms": 3, "loops": 2, "freight_yards": 1,
+                "type": "grade_change_point", "platforms": 3, "loops": 3, "freight_yards": 1,
                 "crew_change": True, "maintenance_depot": False, "water_column": True,
-                "dwell_times": {"superfast": 5, "express": 6, "passenger": 8, "freight": 20},
-                "notes": "Last station before steep climb"
+                "dwell_times": {"superfast": 5, "express": 6, "passenger": 8, "freight": 20, "mail_express": 6},
+                "notes": "Last station before steep climb - critical for speed control"
             },
             "Lonavala_Hold_Point": {
-                "type": "crossing_station", "platforms": 2, "loops": 6, "freight_yards": 0,
+                "type": "crossing_station", "platforms": 2, "loops": 8, "freight_yards": 1,
                 "crew_change": True, "maintenance_depot": False, "water_column": True,
-                "dwell_times": {"superfast": 3, "express": 4, "passenger": 6, "freight": 25},
-                "crossing_capacity": 4, "notes": "Critical crossing point"
+                "dwell_times": {"superfast": 4, "express": 5, "passenger": 7, "freight": 28, "mail_express": 5},
+                "crossing_capacity": 6, "notes": "Critical bottleneck - optimize for crossing coordination"
             },
             "Junction_Z": {
-                "type": "major_junction", "platforms": 8, "loops": 5, "freight_yards": 3,
+                "type": "major_junction", "platforms": 8, "loops": 6, "freight_yards": 4,
                 "crew_change": True, "maintenance_depot": True, "water_column": True,
-                "dwell_times": {"superfast": 4, "express": 5, "passenger": 7, "freight": 18}
+                "dwell_times": {"superfast": 4, "express": 5, "passenger": 7, "freight": 18, "mail_express": 5},
+                "notes": "Major distribution hub - excellent capacity"
+            },
+            "Station_B": {
+                "type": "intermediate_junction", "platforms": 4, "loops": 3, "freight_yards": 2,
+                "crew_change": False, "maintenance_depot": False, "water_column": True,
+                "dwell_times": {"superfast": 2, "express": 3, "passenger": 5, "freight": 12, "mail_express": 3}
+            },
+            "Junction_X": {
+                "type": "branch_junction", "platforms": 3, "loops": 2, "freight_yards": 1,
+                "crew_change": False, "maintenance_depot": False, "water_column": False,
+                "dwell_times": {"superfast": 2, "express": 3, "passenger": 4, "freight": 10, "mail_express": 2}
+            },
+            "Station_G": {
+                "type": "branch_station", "platforms": 2, "loops": 2, "freight_yards": 0,
+                "crew_change": False, "maintenance_depot": False, "water_column": False,
+                "dwell_times": {"superfast": 1, "express": 2, "passenger": 3, "freight": 8, "mail_express": 2}
+            },
+            "H_Loop": {
+                "type": "crossing_loop", "platforms": 1, "loops": 4, "freight_yards": 0,
+                "crew_change": False, "maintenance_depot": False, "water_column": False,
+                "dwell_times": {"superfast": 2, "express": 3, "passenger": 4, "freight": 10, "mail_express": 2},
+                "notes": "Secondary bottleneck - single track crossing loop"
+            },
+            "Station_D": {
+                "type": "terminal_station", "platforms": 3, "loops": 2, "freight_yards": 1,
+                "crew_change": False, "maintenance_depot": False, "water_column": False,
+                "dwell_times": {"superfast": 3, "express": 4, "passenger": 6, "freight": 12, "mail_express": 4}
+            },
+            "Junction_Y": {
+                "type": "interchange", "platforms": 2, "loops": 2, "freight_yards": 1,
+                "crew_change": False, "maintenance_depot": False, "water_column": False,
+                "dwell_times": {"superfast": 2, "express": 3, "passenger": 4, "freight": 10, "mail_express": 2}
             }
         }
         
         self.weather_scenarios = self._get_weather_scenario()
         self.maintenance_blocks = self._get_maintenance_blocks()
         self.operational_constraints = self._get_operational_constraints()
+        
+        # Identify critical bottlenecks
+        self.bottleneck_sections = self._identify_bottlenecks()
         
         # Model variables
         self.time_vars = {}
@@ -243,6 +302,35 @@ class EnhancedIndianRailwayOptimizer:
             }
         }
     
+    def _identify_bottlenecks(self) -> List[Dict]:
+        """Identify and rank critical bottleneck sections for priority optimization"""
+        bottlenecks = []
+        
+        for track in self.tracks:
+            if track.get("bottleneck", False):
+                bottleneck_info = {
+                    "section": f"{track['from']}_to_{track['to']}",
+                    "from": track["from"],
+                    "to": track["to"],
+                    "severity": 1.0 if track["tracks"] == 1 else 0.5,
+                    "gradient": track.get("gradient", "level"),
+                    "crossing_loops": track.get("crossing_loops", 1),
+                    "max_hourly_capacity": track.get("max_hourly_capacity", 2),
+                    "priority_factor": 1.0
+                }
+                
+                # Increase priority for steep climbs and bridged sections
+                if "steep" in track.get("gradient", ""):
+                    bottleneck_info["priority_factor"] *= 2.0
+                if "bridge" in track.get("notes", "").lower():
+                    bottleneck_info["priority_factor"] *= 1.5
+                
+                bottlenecks.append(bottleneck_info)
+        
+        # Sort by priority (highest first)
+        bottlenecks.sort(key=lambda x: x["priority_factor"], reverse=True)
+        return bottlenecks
+    
     def initialize_model_variables(self):
 
         horizon = 36 * 60  # 36 hours in minutes (extended for higher delays)
@@ -310,26 +398,42 @@ class EnhancedIndianRailwayOptimizer:
                 if track is None:
                     continue
                 
+                # Calculate base travel time with gradient adjustments
                 base_time = track["min_travel_time"]
+                gradient_factor = 1.0
                 
+                if track.get("gradient") == "steep_climb":
+                    if train["type"] in [TrainType.FREIGHT, TrainType.GOODS]:
+                        gradient_factor = 1.4  # Freight trains slower on hills
+                    elif train["type"] in [TrainType.SUPERFAST, TrainType.EXPRESS]:
+                        gradient_factor = 1.15  # Express trains moderately faster
+                    else:
+                        gradient_factor = 1.3
+                
+                # Apply weather delays
                 section_key = f"{from_station}_to_{to_station}"
                 weather_conditions = self.weather_scenarios.get("conditions", {})
                 
-                min_travel_time = base_time
+                min_travel_time = int(base_time * gradient_factor)
                 weather_additional = 0
                 
                 if section_key in weather_conditions:
                     weather_additional = int(weather_conditions[section_key]["additional_time"] * self.custom_delay_factor)
                     if train["type"] in [TrainType.SUPERFAST, TrainType.EXPRESS]:
                         weather_additional = int(weather_additional * 0.5)
-                    min_travel_time = base_time + weather_additional
+                    min_travel_time = int(base_time * gradient_factor) + weather_additional
                 
+                # Set flexibility based on train type and single-track status
                 if train["type"] in [TrainType.FREIGHT, TrainType.GOODS]:
-                    flexibility_multiplier = 1.3  # Minimal flex for freight (was 2.0)
+                    flexibility_multiplier = 1.15  # Reduced from 1.25
                 else:
-                    flexibility_multiplier = 1.1  # Minimal flex for passenger trains (was 1.5)
+                    flexibility_multiplier = 1.05  # Reduced from 1.1
                 
-                max_travel_time = int(min_travel_time * flexibility_multiplier) + 10  # Only 10 min buffer (was 60)
+                # Add extra buffer for bottleneck sections
+                if track.get("bottleneck", False):
+                    flexibility_multiplier *= 1.1  # Modest increase for bottlenecks
+                
+                max_travel_time = int(min_travel_time * flexibility_multiplier) + 3  # Reduced from 5
                 
                 actual_travel_time = self.model.NewIntVar(
                     min_travel_time, max_travel_time, 
@@ -360,11 +464,18 @@ class EnhancedIndianRailwayOptimizer:
         station_info = self.station_config[station]
         train_type_key = train["type"].value
         
+        # Get base dwell time for this train type
         base_dwell = station_info["dwell_times"].get(train_type_key, 3)
         
-        if station_info.get("crew_change", False):
+        # Add time for crew changes at designated stations
+        if station_info.get("crew_change", False) and train_type_key in ["superfast", "express", "mail_express"]:
             base_dwell += 5
         
+        # Add time for maintenance depot access
+        if station_info.get("maintenance_depot", False) and train_type_key in ["freight", "goods"]:
+            base_dwell += 2
+        
+        # Add time for water/fuel refilling for long-distance trains
         if train.get("coaches", 12) > 16 and station_info.get("water_column", False):
             base_dwell += 3
         
@@ -418,8 +529,11 @@ class EnhancedIndianRailwayOptimizer:
         for track in single_tracks:
             from_station = track["from"]
             to_station = track["to"]
+            section_key = f"{from_station}_to_{to_station}"
+            is_bottleneck = track.get("bottleneck", False)
             
             intervals = []
+            train_list = []
             
             for train in self.trains:
                 train_id = train["id"]
@@ -431,7 +545,7 @@ class EnhancedIndianRailwayOptimizer:
                     
                     if abs(to_idx - from_idx) == 1: 
                        
-                        buffer_time = 5
+                        buffer_time = 3 if is_bottleneck else 2  # Reduced buffer times
                         
                         if from_idx < to_idx:  # Forward direction
                             start_time = self.time_vars[train_id]["departure"][from_station]
@@ -443,7 +557,7 @@ class EnhancedIndianRailwayOptimizer:
                             self.model.Add(buffered_end == end_time + buffer_time)
                             
                             duration = self.model.NewIntVar(
-                                track["min_travel_time"], track["min_travel_time"] * 5,
+                                track["min_travel_time"], track["min_travel_time"] * 4,
                                 f"duration_{train_id}_{from_station}_{to_station}"
                             )
                             self.model.Add(duration == end_time - start_time + buffer_time)
@@ -464,7 +578,7 @@ class EnhancedIndianRailwayOptimizer:
                             self.model.Add(buffered_end == end_time + buffer_time)
                             
                             duration = self.model.NewIntVar(
-                                track["min_travel_time"], track["min_travel_time"] * 5,
+                                track["min_travel_time"], track["min_travel_time"] * 4,
                                 f"duration_{train_id}_{to_station}_{from_station}"
                             )
                             self.model.Add(duration == end_time - start_time + buffer_time)
@@ -476,46 +590,12 @@ class EnhancedIndianRailwayOptimizer:
                                 f"single_track_{train_id}_{to_station}_{from_station}"
                             )
                         
-                        intervals.append((interval, train))
+                        intervals.append(interval)
+                        train_list.append(train)
             
             if intervals:
-                interval_vars = [interval for interval, _ in intervals]
-                self.model.AddNoOverlap(interval_vars)
-                
-                trains_on_track = [train for _, train in intervals]
-                for i, train1 in enumerate(trains_on_track):
-                    for j, train2 in enumerate(trains_on_track):
-                        if i >= j:
-                            continue
-                        
-                        if train1["priority"] > train2["priority"]:
-                            train1_route = train1["route"]
-                            train2_route = train2["route"]
-                            
-                            train1_from_idx = train1_route.index(from_station) if from_station in train1_route else -1
-                            train1_to_idx = train1_route.index(to_station) if to_station in train1_route else -1
-                            train2_from_idx = train2_route.index(from_station) if from_station in train2_route else -1
-                            train2_to_idx = train2_route.index(to_station) if to_station in train2_route else -1
-                            
-                            if (train1_from_idx >= 0 and train1_to_idx == train1_from_idx + 1 and
-                                train2_from_idx >= 0 and train2_to_idx == train2_from_idx + 1):
-                                
-                                priority_order = self.model.NewBoolVar(
-                                    f"priority_order_{train1['id']}_{train2['id']}_{from_station}_{to_station}"
-                                )
-                                
-                                min_separation = 10  # Minimum separation in minutes
-                                large_gap = 120  # If lower priority goes first, high priority waits long
-                                
-                                self.model.Add(
-                                    self.time_vars[train1["id"]]["departure"][from_station] + min_separation <=
-                                    self.time_vars[train2["id"]]["departure"][from_station]
-                                ).OnlyEnforceIf(priority_order)
-                                
-                                self.model.Add(
-                                    self.time_vars[train2["id"]]["arrival"][to_station] + large_gap <=
-                                    self.time_vars[train1["id"]]["departure"][from_station]
-                                ).OnlyEnforceIf(priority_order.Not())
+                # No overlapping use of single track
+                self.model.AddNoOverlap(intervals)
     
     def add_priority_constraints(self):
 
@@ -674,9 +754,13 @@ class EnhancedIndianRailwayOptimizer:
     def set_optimization_objective(self):
 
         delay_penalty = 0
+        bottleneck_penalty = 0  # NEW: Penalty for bottleneck delays
         punctuality_bonus = 0
         operational_efficiency = 0
-        dwell_penalty = 0  # NEW: Penalty for excessive dwell times
+        dwell_penalty = 0
+        
+        # Penalty for delays at bottleneck stations
+        bottleneck_stations = {bn["to"] for bn in self.bottleneck_sections}
         
         for train in self.trains:
             train_id = train["id"]
@@ -688,59 +772,76 @@ class EnhancedIndianRailwayOptimizer:
                     for delay_type in ["weather", "maintenance", "congestion", "operational"]
                 ])
                 
+                # Determine base weight for delay penalty
                 if train["type"] == TrainType.SUPERFAST:
-                    weight = 100  # MUCH higher penalty for Rajdhani/Shatabdi delays
+                    weight = 100  # Critical: high-priority premium trains
                 elif train["type"] == TrainType.EXPRESS:
-                    weight = 50  # High penalty for Express delays
+                    weight = 50
+                elif train["type"] == TrainType.MAIL_EXPRESS:
+                    weight = 40
                 elif train["type"] == TrainType.PASSENGER:
-                    weight = 20  # Medium penalty for Passenger delays
+                    weight = 20
                 else:
-                    weight = 5  # Lower penalty for Freight delays
+                    weight = 5
                 
+                # Apply extra penalty for bottleneck delays
+                if station in bottleneck_stations:
+                    bottleneck_weight = 3.0  # Triple penalty for bottleneck delays
+                    bottleneck_penalty += total_delay * int(priority * priority * weight * bottleneck_weight * 150)
+                
+                # Regular delay penalty
                 delay_penalty += total_delay * int(priority * priority * weight * 100)
                 
+                # Dwell time penalty
                 min_dwell = self._get_minimum_dwell_time(train, station)
                 actual_dwell = self.time_vars[train_id]["dwell"][station]
                 extra_dwell = self.model.NewIntVar(0, 480, f"extra_dwell_{train_id}_{station}")
                 self.model.Add(extra_dwell >= actual_dwell - min_dwell)
                 dwell_penalty += extra_dwell * int(priority * priority * 50)
         
+        # Punctuality bonus - especially important for premium trains
         for train in self.trains:
             train_id = train["id"]
-            
             final_station = train["route"][-1]
-            scheduled_arrival = train.get("scheduled_departure", 480) + 120  # Assume 2-hour journey
+            
+            # Calculate expected arrival based on route
+            scheduled_arrival = train.get("scheduled_departure", 480) + 120
             actual_arrival = self.time_vars[train_id]["arrival"][final_station]
             
             on_time = self.model.NewBoolVar(f"on_time_{train_id}")
-            
             self.model.Add(actual_arrival <= scheduled_arrival + 5).OnlyEnforceIf(on_time)
             self.model.Add(actual_arrival > scheduled_arrival + 5).OnlyEnforceIf(on_time.Not())
             
-            punctuality_bonus += on_time * int(train["priority"] * 1000)
+            # Premium bonus for premium trains on-time
+            if train["type"] == TrainType.SUPERFAST:
+                punctuality_bonus += on_time * int(train["priority"] * 5000)
+            else:
+                punctuality_bonus += on_time * int(train["priority"] * 1000)
         
+        # Operational efficiency - minimize idle time at stations
         for station in self.station_config:
             station_trains = [t for t in self.trains if station in t["route"]]
             
             for i in range(len(station_trains) - 1):
-                train1_id = station_trains[i]["id"]
-                train2_id = station_trains[i + 1]["id"]
-                
-                gap = self.model.NewIntVar(0, 480, f"platform_gap_{train1_id}_{train2_id}_{station}")
-                
-                self.model.Add(
-                    gap >= self.time_vars[train2_id]["arrival"][station] -
-                    self.time_vars[train1_id]["departure"][station]
-                )
-                
-                operational_efficiency += gap * 5  # Small penalty for large gaps
+                if station_trains[i]["id"] in self.time_vars and station_trains[i + 1]["id"] in self.time_vars:
+                    train1_id = station_trains[i]["id"]
+                    train2_id = station_trains[i + 1]["id"]
+                    
+                    gap = self.model.NewIntVar(0, 480, f"platform_gap_{train1_id}_{train2_id}_{station}")
+                    self.model.Add(
+                        gap >= self.time_vars[train2_id]["arrival"][station] -
+                        self.time_vars[train1_id]["departure"][station]
+                    )
+                    
+                    operational_efficiency += gap * 5
         
-        # Combine objectives
+        # Combine objectives with bottleneck focus
         total_objective = (
-            delay_penalty +           # Minimize delays (positive)
-            dwell_penalty +           # Minimize excessive dwell/waiting (positive)
-            operational_efficiency -  # Minimize inefficiency (positive)  
-            punctuality_bonus        # Maximize punctuality (subtract to maximize)
+            delay_penalty +               # Minimize delays
+            bottleneck_penalty +          # FOCUS: Heavy penalty for bottleneck delays
+            dwell_penalty +               # Minimize excessive dwell
+            operational_efficiency -      # Minimize inefficiency
+            punctuality_bonus            # Maximize punctuality
         )
         
         self.model.Minimize(total_objective)
@@ -753,6 +854,16 @@ class EnhancedIndianRailwayOptimizer:
         print(f"Weather Season: {self.weather_scenarios['season'].title()}")
         print(f"Maintenance Blocks: {len(self.maintenance_blocks)}")
         print("=" * 60)
+        
+        # Display bottleneck analysis
+        if self.bottleneck_sections:
+            print("\nCRITICAL BOTTLENECK SECTIONS (Priority Order):")
+            for i, bottleneck in enumerate(self.bottleneck_sections, 1):
+                print(f"  {i}. {bottleneck['section']}")
+                print(f"     - Gradient: {bottleneck['gradient']}")
+                print(f"     - Crossing Loops: {bottleneck['crossing_loops']}")
+                print(f"     - Max Hourly Capacity: {bottleneck['max_hourly_capacity']} trains")
+                print(f"     - Priority Factor: {bottleneck['priority_factor']:.2f}x")
         
         print("\nBuilding comprehensive optimization model...")
         
@@ -770,7 +881,7 @@ class EnhancedIndianRailwayOptimizer:
         print("   [OK] Maintenance constraints")
         
         self.add_single_track_constraints()
-        print("   [OK] Single track constraints")
+        print("   [OK] Single track constraints (with bottleneck priority)")
         
         self.add_priority_constraints()
         print("   [OK] Priority and overtaking rules")
@@ -785,7 +896,7 @@ class EnhancedIndianRailwayOptimizer:
         print("   [OK] Freight movement restrictions")
         
         self.set_optimization_objective()
-        print("   [OK] Multi-objective function set")
+        print("   [OK] Multi-objective function set (bottleneck-focused)")
         
         print("\nSolving optimization problem...")
         
@@ -998,6 +1109,7 @@ class EnhancedIndianRailwayOptimizer:
 
         insights = {}
         
+        # Weather impact analysis
         weather_delays = sum(
             sum(train_data["delays"][station].get("weather", 0) 
                 for station in train_data["delays"])
@@ -1005,6 +1117,7 @@ class EnhancedIndianRailwayOptimizer:
         )
         insights["weather_impact"] = "High" if weather_delays > 100 else "Moderate" if weather_delays > 50 else "Low"
         
+        # Maintenance impact analysis
         maintenance_delays = sum(
             sum(train_data["delays"][station].get("maintenance", 0)
                 for station in train_data["delays"])
@@ -1012,9 +1125,26 @@ class EnhancedIndianRailwayOptimizer:
         )
         insights["maintenance_impact"] = "High" if maintenance_delays > 80 else "Moderate" if maintenance_delays > 40 else "Low"
         
+        # Bottleneck analysis
         single_track_sections = [t for t in self.tracks if t["tracks"] == 1]
         insights["single_track_bottlenecks"] = len(single_track_sections)
+        insights["critical_bottlenecks"] = len(self.bottleneck_sections)
         
+        # Analyze delays at bottleneck sections
+        bottleneck_delays = {}
+        for bottleneck in self.bottleneck_sections:
+            section_key = f"{bottleneck['from']}_to_{bottleneck['to']}"
+            section_delays = sum(
+                sum(train_data["delays"].get(bottleneck['to'], {}).get(delay_type, 0)
+                    for delay_type in ["weather", "maintenance", "congestion", "operational"])
+                for train_data in solution["train_schedules"].values()
+            )
+            bottleneck_delays[section_key] = section_delays
+        
+        insights["bottleneck_delays"] = bottleneck_delays
+        insights["max_bottleneck_delay"] = max(bottleneck_delays.values()) if bottleneck_delays else 0
+        
+        # Premium train performance
         superfast_delays = [
             train_data["total_delay"] 
             for train_data in solution["train_schedules"].values()
@@ -1030,46 +1160,65 @@ class EnhancedIndianRailwayOptimizer:
         metrics = solution["performance_metrics"]
         insights = solution["operational_insights"]
         
+        # CRITICAL: Bottleneck-focused recommendations
+        if insights.get("critical_bottlenecks", 0) > 0:
+            max_delay = insights.get("max_bottleneck_delay", 0)
+            if max_delay > 20:
+                recommendations.append("[CRITICAL] BOTTLENECK CONGESTION - Immediate Action Required")
+                recommendations.append(f"   - Maximum bottleneck delay: {max_delay} minutes")
+                
+                # Specific bottleneck recommendations
+                bottleneck_delays = insights.get("bottleneck_delays", {})
+                for section, delay in sorted(bottleneck_delays.items(), key=lambda x: x[1], reverse=True)[:2]:
+                    recommendations.append(f"   - {section}: {delay} min cumulative delay")
+                
+                recommendations.append("   - PRIORITY: Double-track the Lonavala_Hold_Point to Junction_Z section (currently single track)")
+                recommendations.append("   - Install 3+ additional crossing loops on critical sections")
+                recommendations.append("   - Implement advanced traffic management system for bottleneck sections")
+                recommendations.append("   - Consider freight train rerouting during peak hours")
+        
         # Punctuality recommendations
         if metrics["punctuality_percentage"] < 80:
             recommendations.append("[PRIORITY] Punctuality below 80% target")
-            recommendations.append("   - Review and optimize station dwell times")
-            recommendations.append("   - Consider dynamic scheduling adjustments")
+            recommendations.append("   - Review and optimize station dwell times at bottleneck stations")
+            recommendations.append("   - Implement priority scheduling for premium trains")
+            recommendations.append("   - Consider staggered scheduling to reduce bottleneck conflicts")
         
         # Weather impact recommendations
         if insights["weather_impact"] == "High":
             recommendations.append("[WEATHER] HIGH WEATHER IMPACT detected")
-            recommendations.append("   - Implement weather-specific speed restrictions")
-            recommendations.append("   - Enhance drainage systems on critical sections")
-            recommendations.append("   - Consider weather forecasting integration")
+            recommendations.append("   - Reduce max speeds on steep climbs during monsoon")
+            recommendations.append("   - Enhance drainage and maintenance on Lonavala-Junction_Z section")
+            recommendations.append("   - Implement weather forecasting for dynamic scheduling")
         
         # Maintenance optimization
         if insights["maintenance_impact"] == "High":
             recommendations.append("[MAINTENANCE] MAINTENANCE IMPACT significant")
-            recommendations.append("   - Reschedule maintenance during low-traffic periods")
-            recommendations.append("   - Coordinate multiple maintenance activities")
-            recommendations.append("   - Implement faster maintenance techniques")
+            recommendations.append("   - Schedule maintenance outside peak traffic windows")
+            recommendations.append("   - Avoid simultaneous maintenance on parallel sections")
+            recommendations.append("   - Use night hours for non-critical maintenance")
         
         # Infrastructure recommendations
         if insights["single_track_bottlenecks"] > 0:
-            recommendations.append(f"[BOTTLENECK] {insights['single_track_bottlenecks']} single track sections")
-            recommendations.append("   - Priority: Double tracking of Lonavala-Junction_Z section")
-            recommendations.append("   - Add additional crossing loops")
-            recommendations.append("   - Implement automatic block signaling")
+            recommendations.append(f"[INFRASTRUCTURE] {insights['single_track_bottlenecks']} single track sections causing delays")
+            recommendations.append("   - HIGHEST PRIORITY: Double Station_J to Lonavala_Hold_Point (steep climb section)")
+            recommendations.append("   - HIGHEST PRIORITY: Double Lonavala_Hold_Point to Junction_Z (critical bridged section)")
+            recommendations.append("   - MEDIUM PRIORITY: Add crossing loop at Station_G to H_Loop")
+            recommendations.append("   - Implement automatic block signaling on all single-track sections")
         
         # Premium service recommendations
         if insights["premium_train_performance"] == "Needs Improvement":
-            recommendations.append("[PREMIUM] PREMIUM SERVICES need attention")
-            recommendations.append("   - Guarantee priority paths for Rajdhani/Shatabdi trains")
-            recommendations.append("   - Implement dynamic rescheduling for delays")
-            recommendations.append("   - Review crew scheduling for premium trains")
+            recommendations.append("[PREMIUM] PREMIUM SERVICES (Rajdhani/Shatabdi) need attention")
+            recommendations.append("   - Guarantee dedicated priority paths through bottleneck sections")
+            recommendations.append("   - Reduce express train stops at minor stations")
+            recommendations.append("   - Implement express line fast-tracking")
         
         # General efficiency recommendations
         if metrics["average_delay_per_train"] > 15:
             recommendations.append("[DELAYS] HIGH AVERAGE DELAYS detected")
-            recommendations.append("   - Implement real-time train tracking")
-            recommendations.append("   - Optimize signal spacing and timing")
-            recommendations.append("   - Review timetable buffer times")
+            recommendations.append("   - Deploy real-time train tracking and dynamic rescheduling")
+            recommendations.append("   - Optimize signal spacing (reduce spacing at bottlenecks)")
+            recommendations.append("   - Review and increase scheduled buffer times on bottleneck sections")
         
         return recommendations
     
@@ -1101,7 +1250,19 @@ class EnhancedIndianRailwayOptimizer:
         print(f"   Weather Impact: {insights['weather_impact']}")
         print(f"   Maintenance Impact: {insights['maintenance_impact']}")
         print(f"   Single Track Bottlenecks: {insights['single_track_bottlenecks']} sections")
+        print(f"   Critical Bottlenecks: {insights.get('critical_bottlenecks', 0)} sections")
         print(f"   Premium Train Performance: {insights['premium_train_performance']}")
+        
+        # Bottleneck-specific analysis
+        if insights.get('bottleneck_delays'):
+            print(f"\nBOTTLENECK DELAY ANALYSIS")
+            bottleneck_delays = insights['bottleneck_delays']
+            max_delay = insights.get('max_bottleneck_delay', 0)
+            print(f"   Maximum Bottleneck Delay: {max_delay} minutes")
+            
+            for section, delay in sorted(bottleneck_delays.items(), key=lambda x: x[1], reverse=True):
+                status = "🔴 CRITICAL" if delay > 20 else "🟠 HIGH" if delay > 10 else "🟡 MODERATE" if delay > 5 else "🟢 LOW"
+                print(f"   {section}: {delay} min {status}")
         
         # Detailed train schedules
         print(f"\nOPTIMIZED TRAIN SCHEDULES")

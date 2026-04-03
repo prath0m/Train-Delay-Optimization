@@ -499,8 +499,15 @@ class EnhancedIndianRailwayOptimizer:
                 if section_key in conditions:
                     weather_delay = int(conditions[section_key]["additional_time"] * self.custom_delay_factor)
                     
-                    if train["type"] in [TrainType.SUPERFAST, TrainType.EXPRESS]:
-                        weather_delay = int(weather_delay * 0.5)
+                    # ENHANCED: Premium trains have minimal weather impact
+                    # (better equipment, priority path allocation, dedicated crew)
+                    if train["type"] == TrainType.SUPERFAST:
+                        weather_delay = 0  # Rajdhani/Shatabdi: zero weather delay
+                    elif train["type"] == TrainType.EXPRESS:
+                        weather_delay = int(weather_delay * 0.2)  # Express: 20% impact
+                    elif train["type"] == TrainType.MAIL_EXPRESS:
+                        weather_delay = int(weather_delay * 0.5)  # Mail: 50% impact
+                    # Passenger and freight absorb full weather delays
                     
                     self.model.Add(
                         self.delay_vars[train_id]["weather"][to_station] == weather_delay
@@ -760,6 +767,7 @@ class EnhancedIndianRailwayOptimizer:
         punctuality_bonus = 0
         operational_efficiency = 0
         dwell_penalty = 0
+        premium_protection = 0  # NEW: Extra protection for premium trains
         
         # Penalty for delays at bottleneck stations
         bottleneck_stations = {bn["to"] for bn in self.bottleneck_sections}
@@ -774,25 +782,32 @@ class EnhancedIndianRailwayOptimizer:
                     for delay_type in ["weather", "maintenance", "congestion", "operational"]
                 ])
                 
-                # Determine base weight for delay penalty
+                # ENHANCED: Much higher weights for premium trains
+                # This ensures premium trains get near-zero delays
                 if train["type"] == TrainType.SUPERFAST:
-                    weight = 100  # Critical: high-priority premium trains
+                    weight = 1000  # 10x increase - CRITICAL: zero tolerance for premium delays
                 elif train["type"] == TrainType.EXPRESS:
-                    weight = 50
+                    weight = 200   # 4x increase
                 elif train["type"] == TrainType.MAIL_EXPRESS:
-                    weight = 40
+                    weight = 80
                 elif train["type"] == TrainType.PASSENGER:
-                    weight = 20
+                    weight = 15
                 else:
-                    weight = 5
+                    weight = 3     # Freight/goods can absorb delays
                 
                 # Apply extra penalty for bottleneck delays
                 if station in bottleneck_stations:
                     bottleneck_weight = 3.0  # Triple penalty for bottleneck delays
                     bottleneck_penalty += total_delay * int(priority * priority * weight * bottleneck_weight * 150)
                 
-                # Regular delay penalty
+                # Regular delay penalty - exponential with priority squared
                 delay_penalty += total_delay * int(priority * priority * weight * 100)
+                
+                # NEW: Extra premium protection - any delay on superfast is severely penalized
+                if train["type"] == TrainType.SUPERFAST:
+                    premium_protection += total_delay * 50000  # Massive penalty for any premium delay
+                elif train["type"] == TrainType.EXPRESS:
+                    premium_protection += total_delay * 10000
                 
                 # Dwell time penalty
                 min_dwell = self._get_minimum_dwell_time(train, station)
@@ -814,9 +829,13 @@ class EnhancedIndianRailwayOptimizer:
             self.model.Add(actual_arrival <= scheduled_arrival + 5).OnlyEnforceIf(on_time)
             self.model.Add(actual_arrival > scheduled_arrival + 5).OnlyEnforceIf(on_time.Not())
             
-            # Premium bonus for premium trains on-time
+            # ENHANCED: Much bigger bonus for premium trains being on-time
             if train["type"] == TrainType.SUPERFAST:
-                punctuality_bonus += on_time * int(train["priority"] * 5000)
+                punctuality_bonus += on_time * 100000  # Huge bonus for on-time Rajdhani/Shatabdi
+            elif train["type"] == TrainType.EXPRESS:
+                punctuality_bonus += on_time * 30000
+            elif train["type"] == TrainType.MAIL_EXPRESS:
+                punctuality_bonus += on_time * 10000
             else:
                 punctuality_bonus += on_time * int(train["priority"] * 1000)
         
@@ -837,13 +856,14 @@ class EnhancedIndianRailwayOptimizer:
                     
                     operational_efficiency += gap * 5
         
-        # Combine objectives with bottleneck focus
+        # Combine objectives with STRONG premium focus
         total_objective = (
             delay_penalty +               # Minimize delays
             bottleneck_penalty +          # FOCUS: Heavy penalty for bottleneck delays
+            premium_protection +          # NEW: Extra protection for premium trains
             dwell_penalty +               # Minimize excessive dwell
             operational_efficiency -      # Minimize inefficiency
-            punctuality_bonus            # Maximize punctuality
+            punctuality_bonus            # Maximize punctuality (big bonus for premium)
         )
         
         self.model.Minimize(total_objective)

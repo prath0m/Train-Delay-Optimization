@@ -1,0 +1,99 @@
+===============================================================================
+Enhanced Indian Railway Train Delay Optimization System
+Comprehensive modeling of weather, maintenance, and operational factors
+================================================================================
+
+CUSTOM DELAY CONFIGURATION
+Enter delay factor (0.0 to 2.0):
+  - 0.0 = No delays (ideal conditions)
+  - 0.5 = Moderate delays
+  - 1.0 = Normal delays (default)
+  - 1.5 = High delays
+
+Delay Factor [default: 1.0]: 0.5
+
+Using delay factor: 0.5
+
+SELECT SCENARIO:
+  1. Monsoon Season (July)
+  2. Winter Fog Season (January)
+  3. Summer Heat Season (April)
+  4. Normal Season (October)
+
+Select scenario [1-4, default: 1]: 3
+
+Selected Scenario: April 15, 2024
+Delay Multiplier: 0.5x
+================================================================================
+
+SELECT OUTPUT FORMAT:
+  1. Simple Summary Table (recommended)
+  2. Visual Timeline Chart
+  3. Both (Summary + Chart)
+  4. Full Detailed Report (original)
+
+Select output [1-4, default: 1]: 1
+
+============================================================
+Enhanced Indian Railway Delay Optimization
+Scenario Date: April 15, 2024
+Weather Season: Summer
+Maintenance Blocks: 2
+============================================================
+
+CRITICAL BOTTLENECK SECTIONS (Priority Order):
+  1. Lonavala_Hold_Point_to_Junction_Z
+     - Gradient: steep_climb
+     - Crossing Loops: 3
+     - Max Hourly Capacity: 6 trains
+     - Priority Factor: 3.00x
+  2. Station_J_to_Lonavala_Hold_Point
+     - Gradient: steep_climb
+     - Crossing Loops: 2
+     - Max Hourly Capacity: 4 trains
+     - Priority Factor: 2.00x
+  3. Station_G_to_H_Loop
+     - Gradient: level
+     - Crossing Loops: 1
+     - Max Hourly Capacity: 4 trains
+     - Priority Factor: 1.00x
+
+Building comprehensive optimization model...
+   [OK] Variables initialized
+   [OK] Basic operational constraints
+   [OK] Weather impact constraints
+   [OK] Maintenance constraints
+   [OK] Single track constraints (with bottleneck priority)
+   [OK] Priority and overtaking rules
+   [OK] No waiting for lower priority constraints
+   [OK] Platform capacity constraints
+   [OK] Freight movement restrictions
+   [OK] Multi-objective function set (bottleneck-focused)
+
+Solving optimization problem...
+
+======================================================================
+            TRAIN DELAY OPTIMIZATION - SUMMARY
+======================================================================
+  Scenario: April 15, 2024 | Weather: Summer
+  Punctuality: 100.0% | Avg Delay: 0.2 min
+======================================================================
+
+Train Name                     Type         Priority Delay      Status    
+----------------------------------------------------------------------
+12301 Howrah Rajdhani          Superfast    5.0        0 min    ✓ On Time 
+22301 Shatabdi Express         Superfast    4.5        0 min    ✓ On Time 
+11301 Udyan Express            Express      4.0        0 min    ✓ On Time 
+17301 Mumbai Mail              Mail_Express 3.5        0 min    ✓ On Time 
+51301 Local Passenger          Passenger    2.0        2 min    ~ Minor   
+59301 Mixed Passenger          Passenger    1.8        0 min    ✓ On Time 
+56301 Container Freight        Freight      1.5        0 min    ✓ On Time 
+52301 Coal Goods               Goods        1.0        0 min    ✓ On Time 
+----------------------------------------------------------------------
+TOTAL                                                  2 min
+======================================================================
+
+📊 Key Insights:
+   • Weather Impact: Low
+   • Bottleneck Sections: 3
+   • Premium Train Status: Good

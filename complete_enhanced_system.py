@@ -22,100 +22,225 @@ class TrainType(Enum):
     FREIGHT = "freight"
     GOODS = "goods"
 
+# Predefined maintenance block configurations
+MAINTENANCE_PRESETS = {
+    0: {
+        "name": "No Maintenance",
+        "description": "No maintenance blocks - all tracks fully operational",
+        "blocks": []
+    },
+    1: {
+        "name": "Light Maintenance (Night)",
+        "description": "Minor track work during night hours (1AM-5AM)",
+        "blocks": [
+            {
+                "section": "Station_J_to_Station_A",
+                "type": "inspection",
+                "start_time": 60,   # 1:00 AM
+                "end_time": 300,    # 5:00 AM
+                "speed_limit": 0.7,
+                "single_line_working": False,
+                "delay_minutes": 5
+            }
+        ]
+    },
+    2: {
+        "name": "Track Renewal (Station A - Station J)",
+        "description": "Major track work on Station A to Station J section",
+        "blocks": [
+            {
+                "section": "Station_J_to_Station_A",
+                "type": "track_renewal",
+                "start_time": 120,  # 2:00 AM
+                "end_time": 360,    # 6:00 AM
+                "speed_limit": 0.3,
+                "single_line_working": True,
+                "delay_minutes": 15
+            }
+        ]
+    },
+    3: {
+        "name": "Signaling Maintenance (Junction X - Station G)",
+        "description": "Signaling system upgrade on branch line",
+        "blocks": [
+            {
+                "section": "Junction_X_to_Station_G",
+                "type": "signaling_maintenance",
+                "start_time": 60,   # 1:00 AM
+                "end_time": 300,    # 5:00 AM
+                "speed_limit": 0.5,
+                "single_line_working": False,
+                "delay_minutes": 10
+            }
+        ]
+    },
+    4: {
+        "name": "Bottleneck Section Maintenance (Lonavala)",
+        "description": "Critical maintenance on steep climb section",
+        "blocks": [
+            {
+                "section": "Station_A_to_Lonavala_Hold_Point",
+                "type": "bridge_inspection",
+                "start_time": 0,    # 12:00 AM
+                "end_time": 240,    # 4:00 AM
+                "speed_limit": 0.4,
+                "single_line_working": True,
+                "delay_minutes": 20
+            }
+        ]
+    },
+    5: {
+        "name": "Multiple Blocks (Heavy Maintenance)",
+        "description": "Multiple sections under maintenance simultaneously",
+        "blocks": [
+            {
+                "section": "Station_J_to_Station_A",
+                "type": "track_renewal",
+                "start_time": 120,
+                "end_time": 360,
+                "speed_limit": 0.3,
+                "single_line_working": True,
+                "delay_minutes": 15
+            },
+            {
+                "section": "Junction_X_to_Station_G",
+                "type": "signaling_maintenance",
+                "start_time": 60,
+                "end_time": 300,
+                "speed_limit": 0.5,
+                "single_line_working": False,
+                "delay_minutes": 10
+            }
+        ]
+    },
+    6: {
+        "name": "Full Day Block (Emergency Repair)",
+        "description": "Emergency repair requiring extended block on main line",
+        "blocks": [
+            {
+                "section": "Lonavala_Hold_Point_to_Junction_Z",
+                "type": "emergency_repair",
+                "start_time": 0,    # All day
+                "end_time": 1440,   # 24 hours
+                "speed_limit": 0.2,
+                "single_line_working": True,
+                "delay_minutes": 30
+            }
+        ]
+    }
+}
+
 class EnhancedIndianRailwayOptimizer:
     
-    def __init__(self, scenario_date: datetime = None, custom_delay_factor: float = 1.0):
+    def __init__(self, scenario_date: datetime = None, custom_delay_factor: float = 1.0, 
+                 maintenance_preset: int = None, custom_maintenance: List[Dict] = None):
         self.model = cp_model.CpModel()
         self.scenario_date = scenario_date or datetime.now()
         self.custom_delay_factor = max(0.0, min(custom_delay_factor, 2.0))  # Clamp between 0 and 2
         
+        # Maintenance configuration
+        self.maintenance_preset = maintenance_preset
+        self.custom_maintenance = custom_maintenance
+        
         self.stations = [
-            "Karjat_Hold_Point", "Station_C", "Station_A", "Station_J",
-            "Lonavala_Hold_Point", "Junction_Z", "Station_B", "Junction_X", 
-            "Station_G", "H_Loop", "Station_D", "Junction_Y"
+            "Karjat_Hold_Point", "Station_C", "Station_J", "Station_A",
+            "Lonavala_Hold_Point", "Junction_Z", "Station_B", "Station_H",
+            "H_Loop", "Junction_X", "Station_G", "Station_D", "Junction_Y"
         ]
         
         # Track network based on diagram - accurate layout with bottleneck identification
         self.tracks = [
-            # Main line: Karjat to Station C (freight entry)
-            {"from": "Karjat_Hold_Point", "to": "Station_C", "length_km": 8, "tracks": 2, 
+            # Main line: Karjat to Station C
+            {"from": "Karjat_Hold_Point", "to": "Station_C", "length_km": 8, "tracks": 2,
              "min_travel_time": 8, "gradient": "level", "electrified": True, "bottleneck": False},
-            
-            # Section 1: Station C to Station J (double track, level)
-            {"from": "Station_C", "to": "Station_A", "length_km": 18, "tracks": 2, 
+
+            # Section 1: Station C → Station J (12 km) → Station A (18 km), double track, level
+            {"from": "Station_C", "to": "Station_J", "length_km": 12, "tracks": 2,
+             "min_travel_time": 10, "gradient": "level", "electrified": True, "bottleneck": False},
+            {"from": "Station_J", "to": "Station_A", "length_km": 18, "tracks": 2,
              "min_travel_time": 15, "gradient": "level", "electrified": True, "bottleneck": False},
-            {"from": "Station_A", "to": "Station_J", "length_km": 18, "tracks": 2,
-             "min_travel_time": 15, "gradient": "level", "electrified": True, "bottleneck": False},
-            
-            # Section 2: Critical bottleneck - steep climb with single track
-            {"from": "Station_J", "to": "Lonavala_Hold_Point", "length_km": 25, "tracks": 1,
+
+            # Section 2: CRITICAL BOTTLENECK - steep climb (Bhor Ghat), single track
+            {"from": "Station_A", "to": "Lonavala_Hold_Point", "length_km": 25, "tracks": 1,
              "min_travel_time": 45, "gradient": "steep_climb", "electrified": True, "bottleneck": True,
              "crossing_loops": 2, "max_hourly_capacity": 4},
-            
-            # Section 3: CRITICAL BOTTLENECK - steep climb with single track (bridged section)
+
+            # Section 3: CRITICAL BOTTLENECK - bridged single-track section to Junction Z
             {"from": "Lonavala_Hold_Point", "to": "Junction_Z", "length_km": 7, "tracks": 1,
              "min_travel_time": 12, "gradient": "steep_climb", "electrified": True, "bottleneck": True,
-             "crossing_loops": 3, "max_hourly_capacity": 6, "notes": "Bridged section - highest priority for capacity"},
-            
-            # Section 4: Junction Z to Station B (main double track)
-            {"from": "Junction_Z", "to": "Station_B", "length_km": 12, "tracks": 2,
-             "min_travel_time": 10, "gradient": "level", "electrified": True, "bottleneck": False},
-            
-            # Section 5: Branch line - double track
-            {"from": "Station_B", "to": "Junction_X", "length_km": 9, "tracks": 2,
+             "crossing_loops": 3, "max_hourly_capacity": 6,
+             "notes": "Bridged section - highest priority for capacity"},
+
+            # Section 4: Junction Z to Station B (freight branch, 13 km double track)
+            {"from": "Junction_Z", "to": "Station_B", "length_km": 13, "tracks": 2,
+             "min_travel_time": 11, "gradient": "level", "electrified": True, "bottleneck": False},
+
+            # Section 5: Junction Z to Station H (9 km double track, main through route)
+            {"from": "Junction_Z", "to": "Station_H", "length_km": 9, "tracks": 2,
              "min_travel_time": 8, "gradient": "level", "electrified": True, "bottleneck": False},
+
+            # Section 6: Station H siding - H Loop (crossing loop, single track)
+            {"from": "Station_H", "to": "H_Loop", "length_km": 2, "tracks": 1,
+             "min_travel_time": 4, "gradient": "level", "electrified": True, "bottleneck": True,
+             "crossing_loops": 4, "max_hourly_capacity": 4,
+             "notes": "Crossing loop at Station H"},
+
+            # Section 7: Station H to Junction X (6 km double track)
+            {"from": "Station_H", "to": "Junction_X", "length_km": 6, "tracks": 2,
+             "min_travel_time": 6, "gradient": "level", "electrified": True, "bottleneck": False},
+
+            # Section 8: Down branch - Junction X to Station G (11 km double track)
             {"from": "Junction_X", "to": "Station_G", "length_km": 11, "tracks": 2,
              "min_travel_time": 9, "gradient": "level", "electrified": True, "bottleneck": False},
-            
-            # Section 6: Branch line - single track loops
-            {"from": "Station_G", "to": "H_Loop", "length_km": 7, "tracks": 1,
-             "min_travel_time": 10, "gradient": "level", "electrified": True, "bottleneck": True,
-             "crossing_loops": 1, "max_hourly_capacity": 4},
-            
-            # Section 7: Loop to Station D
-            {"from": "H_Loop", "to": "Station_D", "length_km": 14, "tracks": 2,
-             "min_travel_time": 12, "gradient": "level", "electrified": True, "bottleneck": False},
-            
-            # Additional connections (from diagram)
-            {"from": "Station_D", "to": "Junction_Y", "length_km": 9, "tracks": 2,
+
+            # Section 9: Up branch - Junction X to Station D (9 km double track)
+            {"from": "Junction_X", "to": "Station_D", "length_km": 9, "tracks": 2,
              "min_travel_time": 8, "gradient": "level", "electrified": True, "bottleneck": False},
+
+            # Section 10: Station D to Junction Y (7 km double track)
+            {"from": "Station_D", "to": "Junction_Y", "length_km": 7, "tracks": 2,
+             "min_travel_time": 7, "gradient": "level", "electrified": True, "bottleneck": False},
         ]
         
         self.trains = [
             # Premium trains (highest priority)
+            # C → J (12km) → A (18km) → Lonavala → Z (corrected order)
             {"id": "12301_Howrah_Rajdhani", "type": TrainType.SUPERFAST, "priority": 5.0,
-             "route": ["Station_C", "Station_A", "Station_J", "Lonavala_Hold_Point", "Junction_Z", "Station_B"],
+             "route": ["Station_C", "Station_J", "Station_A", "Lonavala_Hold_Point", "Junction_Z", "Station_B"],
              "scheduled_departure": 300, "passenger_load": 1.0, "coaches": 18},
-             
+
             {"id": "22301_Shatabdi_Express", "type": TrainType.SUPERFAST, "priority": 4.5,
-             "route": ["Station_C", "Station_A", "Station_J", "Lonavala_Hold_Point", "Junction_Z"],
+             "route": ["Station_C", "Station_J", "Station_A", "Lonavala_Hold_Point", "Junction_Z"],
              "scheduled_departure": 360, "passenger_load": 0.9, "coaches": 16},
-            
+
             # Express trains
+            # Through route via Station H and Junction X (corrected - no direct B→X)
             {"id": "11301_Udyan_Express", "type": TrainType.EXPRESS, "priority": 4.0,
-             "route": ["Station_C", "Station_A", "Station_J", "Lonavala_Hold_Point", "Junction_Z", "Station_B", "Junction_X"],
+             "route": ["Station_C", "Station_J", "Station_A", "Lonavala_Hold_Point", "Junction_Z", "Station_H", "Junction_X"],
              "scheduled_departure": 420, "passenger_load": 1.1, "coaches": 22},
-             
+
+            # Return direction: reverse of corrected mainline
             {"id": "17301_Mumbai_Mail", "type": TrainType.MAIL_EXPRESS, "priority": 3.5,
-             "route": ["Station_B", "Junction_Z", "Lonavala_Hold_Point", "Station_J", "Station_A", "Station_C"],
+             "route": ["Station_B", "Junction_Z", "Lonavala_Hold_Point", "Station_A", "Station_J", "Station_C"],
              "scheduled_departure": 480, "passenger_load": 1.2, "coaches": 20},
-            
+
             # Passenger trains
             {"id": "51301_Local_Passenger", "type": TrainType.PASSENGER, "priority": 2.0,
-             "route": ["Station_C", "Station_A", "Station_J", "Lonavala_Hold_Point"],
+             "route": ["Station_C", "Station_J", "Station_A", "Lonavala_Hold_Point"],
              "scheduled_departure": 390, "passenger_load": 1.4, "coaches": 12},
-             
+
+            # Freight branch: Z → H → Junction X → G (via Station H, no direct B→X)
             {"id": "59301_Mixed_Passenger", "type": TrainType.PASSENGER, "priority": 1.8,
-             "route": ["Junction_Z", "Station_B", "Junction_X", "Station_G"],
+             "route": ["Junction_Z", "Station_H", "Junction_X", "Station_G"],
              "scheduled_departure": 450, "passenger_load": 1.3, "coaches": 10},
-            
+
             # Freight trains
             {"id": "56301_Container_Freight", "type": TrainType.FREIGHT, "priority": 1.5,
-             "route": ["Karjat_Hold_Point", "Station_C", "Station_A", "Station_J"],
+             "route": ["Karjat_Hold_Point", "Station_C", "Station_J", "Station_A"],
              "scheduled_departure": 240, "freight_wagons": 45, "commodity": "containers"},
-             
+
             {"id": "52301_Coal_Goods", "type": TrainType.GOODS, "priority": 1.0,
-             "route": ["Karjat_Hold_Point", "Station_C", "Station_A"],
+             "route": ["Karjat_Hold_Point", "Station_C", "Station_J"],
              "scheduled_departure": 180, "freight_wagons": 58, "commodity": "coal"}
         ]
         
@@ -162,6 +287,18 @@ class EnhancedIndianRailwayOptimizer:
                 "crew_change": False, "maintenance_depot": False, "water_column": True,
                 "dwell_times": {"superfast": 2, "express": 3, "passenger": 5, "freight": 12, "mail_express": 3}
             },
+            "Station_H": {
+                "type": "through_station", "platforms": 3, "loops": 4, "freight_yards": 1,
+                "crew_change": False, "maintenance_depot": False, "water_column": True,
+                "dwell_times": {"superfast": 2, "express": 3, "passenger": 5, "freight": 12, "mail_express": 3},
+                "notes": "Station H with H_Loop crossing loop siding"
+            },
+            "H_Loop": {
+                "type": "crossing_loop", "platforms": 1, "loops": 4, "freight_yards": 0,
+                "crew_change": False, "maintenance_depot": False, "water_column": False,
+                "dwell_times": {"superfast": 2, "express": 3, "passenger": 4, "freight": 10, "mail_express": 2},
+                "notes": "Crossing loop siding at Station H"
+            },
             "Junction_X": {
                 "type": "branch_junction", "platforms": 3, "loops": 2, "freight_yards": 1,
                 "crew_change": False, "maintenance_depot": False, "water_column": False,
@@ -171,12 +308,6 @@ class EnhancedIndianRailwayOptimizer:
                 "type": "branch_station", "platforms": 2, "loops": 2, "freight_yards": 0,
                 "crew_change": False, "maintenance_depot": False, "water_column": False,
                 "dwell_times": {"superfast": 1, "express": 2, "passenger": 3, "freight": 8, "mail_express": 2}
-            },
-            "H_Loop": {
-                "type": "crossing_loop", "platforms": 1, "loops": 4, "freight_yards": 0,
-                "crew_change": False, "maintenance_depot": False, "water_column": False,
-                "dwell_times": {"superfast": 2, "express": 3, "passenger": 4, "freight": 10, "mail_express": 2},
-                "notes": "Secondary bottleneck - single track crossing loop"
             },
             "Station_D": {
                 "type": "terminal_station", "platforms": 3, "loops": 2, "freight_yards": 1,
@@ -211,7 +342,7 @@ class EnhancedIndianRailwayOptimizer:
             return {
                 "season": "monsoon",
                 "conditions": {
-                    "Station_J_to_Lonavala_Hold_Point": {
+                    "Station_A_to_Lonavala_Hold_Point": {
                         "condition": WeatherCondition.HEAVY_RAIN,
                         "speed_reduction": 0.4 * self.custom_delay_factor,
                         "additional_time": int(20 * self.custom_delay_factor),
@@ -229,7 +360,7 @@ class EnhancedIndianRailwayOptimizer:
             return {
                 "season": "winter",
                 "conditions": {
-                    "Station_A_to_Station_J": {
+                    "Station_J_to_Station_A": {
                         "condition": WeatherCondition.FOG,
                         "speed_reduction": 0.5 * self.custom_delay_factor,
                         "additional_time": int(15 * self.custom_delay_factor),
@@ -247,7 +378,7 @@ class EnhancedIndianRailwayOptimizer:
             return {
                 "season": "summer",
                 "conditions": {
-                    "Station_J_to_Lonavala_Hold_Point": {
+                    "Station_A_to_Lonavala_Hold_Point": {
                         "condition": WeatherCondition.EXTREME_HEAT,
                         "speed_reduction": 0.2 * self.custom_delay_factor,
                         "additional_time": int(10 * self.custom_delay_factor),
@@ -259,25 +390,23 @@ class EnhancedIndianRailwayOptimizer:
             return {"season": "normal", "conditions": {}}
     
     def _get_maintenance_blocks(self) -> List[Dict]:
-
-        return [
-            {
-                "section": "Station_A_to_Station_J",
-                "type": "track_renewal",
-                "start_time": 120,  # 2:00 AM
-                "end_time": 360,    # 6:00 AM
-                "speed_limit": 0.3 * self.custom_delay_factor,
-                "single_line_working": True
-            },
-            {
-                "section": "Junction_X_to_Station_G", 
-                "type": "signaling_maintenance",
-                "start_time": 60,   # 1:00 AM
-                "end_time": 300,    # 5:00 AM
-                "speed_limit": 0.5 * self.custom_delay_factor,
-                "single_line_working": False
-            }
-        ]
+        """Get maintenance blocks based on preset or custom configuration"""
+        
+        # If custom maintenance is provided, use it
+        if self.custom_maintenance is not None:
+            return self.custom_maintenance
+        
+        # If preset is specified, use it
+        if self.maintenance_preset is not None:
+            preset = MAINTENANCE_PRESETS.get(self.maintenance_preset, MAINTENANCE_PRESETS[0])
+            blocks = preset.get("blocks", [])
+            # Apply delay factor to each block
+            for block in blocks:
+                block["speed_limit"] = block.get("speed_limit", 0.5) * self.custom_delay_factor
+            return blocks
+        
+        # Default: return standard maintenance blocks (preset 5 - multiple blocks)
+        return MAINTENANCE_PRESETS[5]["blocks"]
     
     def _get_operational_constraints(self) -> Dict:
 
@@ -295,7 +424,7 @@ class EnhancedIndianRailwayOptimizer:
             },
             "freight_restrictions": {
                 "peak_hours": ["07:00-10:00", "17:00-20:00"],
-                "restricted_sections": ["Station_C_to_Station_A", "Junction_Z_to_Station_B"]
+                "restricted_sections": ["Station_C_to_Station_J", "Junction_Z_to_Station_B"]
             },
             "crew_constraints": {
                 "maximum_duty_hours": 8 * 60,  # 8 hours in minutes
@@ -1225,7 +1354,7 @@ class EnhancedIndianRailwayOptimizer:
             recommendations.append(f"[INFRASTRUCTURE] {insights['single_track_bottlenecks']} single track sections causing delays")
             recommendations.append("   - HIGHEST PRIORITY: Double Station_J to Lonavala_Hold_Point (steep climb section)")
             recommendations.append("   - HIGHEST PRIORITY: Double Lonavala_Hold_Point to Junction_Z (critical bridged section)")
-            recommendations.append("   - MEDIUM PRIORITY: Add crossing loop at Station_G to H_Loop")
+            recommendations.append("   - MEDIUM PRIORITY: Expand H_Loop crossing capacity at Station_H")
             recommendations.append("   - Implement automatic block signaling on all single-track sections")
         
         # Premium service recommendations
@@ -1474,6 +1603,18 @@ class EnhancedIndianRailwayOptimizer:
         print(f"   • Weather Impact: {insights['weather_impact']}")
         print(f"   • Bottleneck Sections: {insights['single_track_bottlenecks']}")
         print(f"   • Premium Train Status: {insights['premium_train_performance']}")
+        
+        # Show maintenance blocks
+        maint_blocks = self._get_maintenance_blocks()
+        if maint_blocks:
+            print(f"\n🔧 Active Maintenance Blocks ({len(maint_blocks)}):")
+            for block in maint_blocks:
+                time_start = f"{block['start_time']//60:02d}:{block['start_time']%60:02d}"
+                time_end = f"{block['end_time']//60:02d}:{block['end_time']%60:02d}"
+                section_name = block['section'].replace('_', ' ')
+                print(f"   • {section_name}: {block['type'].replace('_', ' ').title()} ({time_start}-{time_end})")
+        else:
+            print(f"\n🔧 Maintenance: None (all tracks operational)")
 
     def plot_train_timeline(self, solution, save_path: str = None):
         """Generate a visual timeline chart of train movements"""
@@ -1508,32 +1649,54 @@ class EnhancedIndianRailwayOptimizer:
             schedule = train_data['schedule']
             route = train['route']
             
-            # Get first departure and last arrival times
-            first_station = route[0]
-            last_station = route[-1]
-            
             try:
-                dep_time = schedule[first_station]['departure']
-                arr_time = schedule[last_station]['arrival']
-                
-                dep_minutes = int(dep_time.split(':')[0]) * 60 + int(dep_time.split(':')[1])
-                arr_minutes = int(arr_time.split(':')[0]) * 60 + int(arr_time.split(':')[1])
-                
-                # Handle wraparound for overnight trains
-                if arr_minutes < dep_minutes:
-                    arr_minutes += 24 * 60
-                
-                # Draw the bar
-                bar_length = arr_minutes - dep_minutes
-                ax.barh(y_pos, bar_length, left=dep_minutes, height=0.6, 
-                       color=color, alpha=0.8, edgecolor='black', linewidth=0.5)
-                
-                # Add delay indicator
+                prev_dep_minutes = None
+
+                for station in route:
+                    if station not in schedule:
+                        continue
+
+                    arr_str = schedule[station]['arrival']
+                    dep_str = schedule[station]['departure']
+
+                    arr_min = int(arr_str.split(':')[0]) * 60 + int(arr_str.split(':')[1])
+                    dep_min = int(dep_str.split(':')[0]) * 60 + int(dep_str.split(':')[1])
+
+                    # Handle midnight wraparound relative to previous departure
+                    if prev_dep_minutes is not None and arr_min < prev_dep_minutes:
+                        arr_min += 24 * 60
+                    if dep_min < arr_min:
+                        dep_min += 24 * 60
+
+                    # Draw travel segment from previous station's departure to this arrival
+                    if prev_dep_minutes is not None:
+                        travel_len = arr_min - prev_dep_minutes
+                        if travel_len > 0:
+                            ax.barh(y_pos, travel_len, left=prev_dep_minutes, height=0.5,
+                                   color=color, alpha=0.75, edgecolor='black', linewidth=0.5)
+
+                    # Draw dwell bar at station (slightly taller to distinguish stops)
+                    dwell = schedule[station]['dwell_minutes']
+                    if dwell > 0:
+                        ax.barh(y_pos, dwell, left=arr_min, height=0.75,
+                               color=color, alpha=1.0, edgecolor='black', linewidth=1.0)
+
+                    # Mark stations with delay using a downward triangle
+                    station_delay = sum(train_data['delays'].get(station, {}).values())
+                    if station_delay > 0:
+                        delay_color = '#e74c3c' if station_delay > 15 else '#f39c12' if station_delay > 5 else '#27ae60'
+                        ax.plot(arr_min, y_pos + 0.45, 'v', color=delay_color,
+                               markersize=5, zorder=5, clip_on=False)
+
+                    prev_dep_minutes = dep_min
+
+                # Add total delay label after the final departure
                 delay = train_data['total_delay']
-                if delay > 0:
+                if delay > 0 and prev_dep_minutes is not None:
                     delay_color = '#e74c3c' if delay > 15 else '#f39c12' if delay > 5 else '#27ae60'
-                    ax.text(arr_minutes + 5, y_pos, f"+{delay}m", 
+                    ax.text(prev_dep_minutes + 5, y_pos, f"+{delay}m",
                            va='center', ha='left', fontsize=8, color=delay_color, fontweight='bold')
+
             except (KeyError, ValueError):
                 continue
         
@@ -1626,6 +1789,47 @@ def main():
     
     print(f"\nSelected Scenario: {scenario_date.strftime('%B %d, %Y')}")
     print(f"Delay Multiplier: {custom_delay_factor}x")
+    
+    # Select maintenance block
+    print("\n" + "=" * 80)
+    print("MAINTENANCE BLOCK CONFIGURATION")
+    print("=" * 80)
+    print("\nSelect maintenance block option:")
+    print("  0. No Maintenance (all tracks operational)")
+    print("  1. Light Maintenance (Night) - Minor track inspection")
+    print("  2. Track Renewal (Station A - Station J)")
+    print("  3. Signaling Maintenance (Junction X - Station G)")
+    print("  4. Bottleneck Section Maintenance (Lonavala steep climb)")
+    print("  5. Multiple Blocks (Heavy Maintenance) [default]")
+    print("  6. Full Day Block (Emergency Repair on main line)")
+    
+    try:
+        maint_input = input("\nSelect maintenance [0-6, default: 5]: ").strip().lower()
+        
+        # Check for "no" or empty for default
+        if maint_input in ["no", "n", "none"]:
+            maintenance_preset = 0
+            print("\n✓ All maintenance blocks REMOVED - tracks fully operational")
+        elif maint_input == "":
+            maintenance_preset = 5
+        else:
+            maintenance_preset = int(maint_input)
+            maintenance_preset = max(0, min(maintenance_preset, 6))  # Clamp
+    except ValueError:
+        print("WARNING: Invalid input, using default (Multiple Blocks)")
+        maintenance_preset = 5
+    
+    # Display selected maintenance info
+    preset_info = MAINTENANCE_PRESETS.get(maintenance_preset, MAINTENANCE_PRESETS[5])
+    print(f"\n✓ Selected: {preset_info['name']}")
+    print(f"  {preset_info['description']}")
+    if preset_info['blocks']:
+        print(f"  Affected sections:")
+        for block in preset_info['blocks']:
+            time_start = f"{block['start_time']//60:02d}:{block['start_time']%60:02d}"
+            time_end = f"{block['end_time']//60:02d}:{block['end_time']%60:02d}"
+            print(f"    • {block['section'].replace('_', ' ')} ({time_start} - {time_end})")
+    
     print("=" * 80)
     
     # Select output format
@@ -1643,7 +1847,8 @@ def main():
     
     optimizer = EnhancedIndianRailwayOptimizer(
         scenario_date=scenario_date,
-        custom_delay_factor=custom_delay_factor
+        custom_delay_factor=custom_delay_factor,
+        maintenance_preset=maintenance_preset
     )
     
     solution = optimizer.solve_optimization()

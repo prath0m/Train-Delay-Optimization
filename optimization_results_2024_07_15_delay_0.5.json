@@ -1,7 +1,7 @@
 {
   "status": "OPTIMAL",
-  "solve_time": 0.059257000000000004,
-  "objective_value": 41924862.0,
+  "solve_time": 0.08528300000000001,
+  "objective_value": 9018237.0,
   "train_schedules": {
     "12301_Howrah_Rajdhani": {
       "schedule": {
@@ -21,18 +21,18 @@
           "dwell_minutes": 13
         },
         "Lonavala_Hold_Point": {
-          "arrival": "07:02",
-          "departure": "07:14",
+          "arrival": "06:54",
+          "departure": "07:06",
           "dwell_minutes": 12
         },
         "Junction_Z": {
-          "arrival": "07:36",
-          "departure": "07:48",
+          "arrival": "07:25",
+          "departure": "07:37",
           "dwell_minutes": 12
         },
         "Station_B": {
-          "arrival": "07:58",
-          "departure": "08:34",
+          "arrival": "07:47",
+          "departure": "08:03",
           "dwell_minutes": 0
         }
       },
@@ -56,13 +56,13 @@
           "operational": 0
         },
         "Lonavala_Hold_Point": {
-          "weather": 10,
+          "weather": 2,
           "maintenance": 0,
           "congestion": 0,
           "operational": 0
         },
         "Junction_Z": {
-          "weather": 4,
+          "weather": 1,
           "maintenance": 0,
           "congestion": 0,
           "operational": 0
@@ -74,7 +74,7 @@
           "operational": 0
         }
       },
-      "total_delay": 14,
+      "total_delay": 3,
       "type": "superfast",
       "priority": 5.0
     },
@@ -82,27 +82,27 @@
       "schedule": {
         "Station_C": {
           "arrival": "05:00",
-          "departure": "06:23",
+          "departure": "06:15",
           "dwell_minutes": 0
         },
         "Station_A": {
-          "arrival": "06:38",
-          "departure": "06:40",
+          "arrival": "06:30",
+          "departure": "06:32",
           "dwell_minutes": 2
         },
         "Station_J": {
-          "arrival": "06:55",
-          "departure": "07:05",
+          "arrival": "06:47",
+          "departure": "06:57",
           "dwell_minutes": 10
         },
         "Lonavala_Hold_Point": {
-          "arrival": "08:06",
-          "departure": "08:15",
+          "arrival": "07:50",
+          "departure": "07:59",
           "dwell_minutes": 9
         },
         "Junction_Z": {
-          "arrival": "08:32",
-          "departure": "08:57",
+          "arrival": "08:13",
+          "departure": "08:26",
           "dwell_minutes": 0
         }
       },
@@ -126,19 +126,19 @@
           "operational": 0
         },
         "Lonavala_Hold_Point": {
-          "weather": 10,
+          "weather": 2,
           "maintenance": 0,
           "congestion": 0,
           "operational": 0
         },
         "Junction_Z": {
-          "weather": 4,
+          "weather": 1,
           "maintenance": 0,
           "congestion": 0,
           "operational": 0
         }
       },
-      "total_delay": 14,
+      "total_delay": 3,
       "type": "superfast",
       "priority": 4.5
     },
@@ -151,32 +151,32 @@
         },
         "Station_A": {
           "arrival": "09:18",
-          "departure": "09:59",
-          "dwell_minutes": 41
+          "departure": "09:28",
+          "dwell_minutes": 10
         },
         "Station_J": {
-          "arrival": "10:17",
-          "departure": "10:31",
+          "arrival": "09:46",
+          "departure": "10:00",
           "dwell_minutes": 14
         },
         "Lonavala_Hold_Point": {
-          "arrival": "11:32",
-          "departure": "11:45",
+          "arrival": "10:53",
+          "departure": "11:06",
           "dwell_minutes": 13
         },
         "Junction_Z": {
-          "arrival": "12:02",
-          "departure": "12:15",
+          "arrival": "11:20",
+          "departure": "11:33",
           "dwell_minutes": 13
         },
         "Station_B": {
-          "arrival": "12:25",
-          "departure": "12:31",
+          "arrival": "11:43",
+          "departure": "11:49",
           "dwell_minutes": 6
         },
         "Junction_X": {
-          "arrival": "12:39",
-          "departure": "11:34",
+          "arrival": "11:57",
+          "departure": "11:03",
           "dwell_minutes": 0
         }
       },
@@ -200,13 +200,13 @@
           "operational": 0
         },
         "Lonavala_Hold_Point": {
-          "weather": 10,
+          "weather": 2,
           "maintenance": 0,
           "congestion": 0,
           "operational": 0
         },
         "Junction_Z": {
-          "weather": 4,
+          "weather": 1,
           "maintenance": 0,
           "congestion": 0,
           "operational": 0
@@ -224,40 +224,40 @@
           "operational": 0
         }
       },
-      "total_delay": 14,
+      "total_delay": 3,
       "type": "express",
       "priority": 4.0
     },
     "17301_Mumbai_Mail": {
       "schedule": {
         "Station_B": {
-          "arrival": "10:52",
-          "departure": "08:39",
+          "arrival": "10:21",
+          "departure": "08:08",
           "dwell_minutes": 0
         },
         "Junction_Z": {
-          "arrival": "08:49",
-          "departure": "09:02",
+          "arrival": "08:18",
+          "departure": "08:31",
           "dwell_minutes": 13
         },
         "Lonavala_Hold_Point": {
-          "arrival": "09:17",
-          "departure": "09:30",
+          "arrival": "08:46",
+          "departure": "08:59",
           "dwell_minutes": 13
         },
         "Station_J": {
-          "arrival": "10:28",
-          "departure": "10:42",
+          "arrival": "09:57",
+          "departure": "10:11",
           "dwell_minutes": 14
         },
         "Station_A": {
-          "arrival": "10:57",
-          "departure": "11:02",
+          "arrival": "10:26",
+          "departure": "10:31",
           "dwell_minutes": 5
         },
         "Station_C": {
-          "arrival": "11:17",
-          "departure": "09:05",
+          "arrival": "10:46",
+          "departure": "10:30",
           "dwell_minutes": 0
         }
       },
@@ -306,7 +306,7 @@
     "51301_Local_Passenger": {
       "schedule": {
         "Station_C": {
-          "arrival": "08:30",
+          "arrival": "08:42",
           "departure": "07:00",
           "dwell_minutes": 0
         },
@@ -317,12 +317,12 @@
         },
         "Station_J": {
           "arrival": "07:40",
-          "departure": "08:09",
-          "dwell_minutes": 29
+          "departure": "07:53",
+          "dwell_minutes": 13
         },
         "Lonavala_Hold_Point": {
-          "arrival": "09:27",
-          "departure": "05:01",
+          "arrival": "08:56",
+          "departure": "04:53",
           "dwell_minutes": 0
         }
       },
@@ -346,13 +346,13 @@
           "operational": 0
         },
         "Lonavala_Hold_Point": {
-          "weather": 20,
+          "weather": 5,
           "maintenance": 0,
           "congestion": 0,
           "operational": 0
         }
       },
-      "total_delay": 20,
+      "total_delay": 5,
       "type": "passenger",
       "priority": 2.0
     },
@@ -360,21 +360,21 @@
       "schedule": {
         "Junction_Z": {
           "arrival": "00:00",
-          "departure": "09:07",
+          "departure": "08:36",
           "dwell_minutes": 0
         },
         "Station_B": {
-          "arrival": "09:17",
-          "departure": "09:22",
+          "arrival": "08:46",
+          "departure": "08:51",
           "dwell_minutes": 5
         },
         "Junction_X": {
-          "arrival": "09:30",
-          "departure": "09:34",
+          "arrival": "08:59",
+          "departure": "09:03",
           "dwell_minutes": 4
         },
         "Station_G": {
-          "arrival": "09:43",
+          "arrival": "09:12",
           "departure": "00:00",
           "dwell_minutes": 0
         }
@@ -506,43 +506,31 @@
     }
   },
   "performance_metrics": {
-    "total_system_delay_minutes": 62,
-    "average_delay_per_train": 7.75,
-    "punctuality_percentage": 87.5,
-    "on_time_trains": 7,
+    "total_system_delay_minutes": 14,
+    "average_delay_per_train": 1.75,
+    "punctuality_percentage": 100.0,
+    "on_time_trains": 8,
     "total_trains": 8
   },
   "operational_insights": {
-    "weather_impact": "Moderate",
+    "weather_impact": "Low",
     "maintenance_impact": "Low",
     "single_track_bottlenecks": 3,
     "critical_bottlenecks": 3,
     "bottleneck_delays": {
-      "Lonavala_Hold_Point_to_Junction_Z": 12,
-      "Station_J_to_Lonavala_Hold_Point": 50,
+      "Lonavala_Hold_Point_to_Junction_Z": 3,
+      "Station_J_to_Lonavala_Hold_Point": 11,
       "Station_G_to_H_Loop": 0
     },
-    "max_bottleneck_delay": 50,
-    "premium_train_performance": "Needs Improvement"
+    "max_bottleneck_delay": 11,
+    "premium_train_performance": "Good"
   },
   "recommendations": [
-    "[CRITICAL] BOTTLENECK CONGESTION - Immediate Action Required",
-    "   - Maximum bottleneck delay: 50 minutes",
-    "   - Station_J_to_Lonavala_Hold_Point: 50 min cumulative delay",
-    "   - Lonavala_Hold_Point_to_Junction_Z: 12 min cumulative delay",
-    "   - PRIORITY: Double-track the Lonavala_Hold_Point to Junction_Z section (currently single track)",
-    "   - Install 3+ additional crossing loops on critical sections",
-    "   - Implement advanced traffic management system for bottleneck sections",
-    "   - Consider freight train rerouting during peak hours",
     "[INFRASTRUCTURE] 3 single track sections causing delays",
     "   - HIGHEST PRIORITY: Double Station_J to Lonavala_Hold_Point (steep climb section)",
     "   - HIGHEST PRIORITY: Double Lonavala_Hold_Point to Junction_Z (critical bridged section)",
     "   - MEDIUM PRIORITY: Add crossing loop at Station_G to H_Loop",
-    "   - Implement automatic block signaling on all single-track sections",
-    "[PREMIUM] PREMIUM SERVICES (Rajdhani/Shatabdi) need attention",
-    "   - Guarantee dedicated priority paths through bottleneck sections",
-    "   - Reduce express train stops at minor stations",
-    "   - Implement express line fast-tracking"
+    "   - Implement automatic block signaling on all single-track sections"
   ],
   "train_interactions": {
     "overtaking_events": [
@@ -554,7 +542,7 @@
         "overtaking_train": "12301_Howrah_Rajdhani",
         "overtaking_train_type": "superfast",
         "overtaking_train_priority": 5.0,
-        "wait_time_minutes": 83,
+        "wait_time_minutes": 75,
         "time": "05:00"
       },
       {
@@ -587,8 +575,8 @@
         "overtaking_train": "12301_Howrah_Rajdhani",
         "overtaking_train_type": "superfast",
         "overtaking_train_priority": 5.0,
-        "wait_time_minutes": -90,
-        "time": "08:30"
+        "wait_time_minutes": -102,
+        "time": "08:42"
       },
       {
         "station": "Station_C",
@@ -598,8 +586,8 @@
         "overtaking_train": "12301_Howrah_Rajdhani",
         "overtaking_train_type": "superfast",
         "overtaking_train_priority": 5.0,
-        "wait_time_minutes": -132,
-        "time": "11:17"
+        "wait_time_minutes": -16,
+        "time": "10:46"
       },
       {
         "station": "Station_A",
@@ -620,7 +608,7 @@
         "overtaking_train": "12301_Howrah_Rajdhani",
         "overtaking_train_type": "superfast",
         "overtaking_train_priority": 5.0,
-        "wait_time_minutes": 547,
+        "wait_time_minutes": 516,
         "time": "00:00"
       },
       {
@@ -631,7 +619,7 @@
         "overtaking_train": "22301_Shatabdi_Express",
         "overtaking_train_type": "superfast",
         "overtaking_train_priority": 4.5,
-        "wait_time_minutes": 547,
+        "wait_time_minutes": 516,
         "time": "00:00"
       },
       {
@@ -642,7 +630,7 @@
         "overtaking_train": "17301_Mumbai_Mail",
         "overtaking_train_type": "mail_express",
         "overtaking_train_priority": 3.5,
-        "wait_time_minutes": 547,
+        "wait_time_minutes": 516,
         "time": "00:00"
       },
       {
@@ -654,7 +642,7 @@
         "overtaking_train_type": "mail_express",
         "overtaking_train_priority": 3.5,
         "wait_time_minutes": 5,
-        "time": "09:17"
+        "time": "08:46"
       }
     ],
     "waiting_events": [
@@ -671,7 +659,7 @@
         "waiting_train": "22301_Shatabdi_Express",
         "waiting_train_type": "superfast",
         "possibly_waiting_for": "56301_Container_Freight",
-        "extra_wait_minutes": 75,
+        "extra_wait_minutes": 67,
         "time": "05:00"
       },
       {
@@ -679,7 +667,7 @@
         "waiting_train": "22301_Shatabdi_Express",
         "waiting_train_type": "superfast",
         "possibly_waiting_for": "11301_Udyan_Express",
-        "extra_wait_minutes": 75,
+        "extra_wait_minutes": 67,
         "time": "05:00"
       },
       {
@@ -687,7 +675,7 @@
         "waiting_train": "22301_Shatabdi_Express",
         "waiting_train_type": "superfast",
         "possibly_waiting_for": "51301_Local_Passenger",
-        "extra_wait_minutes": 75,
+        "extra_wait_minutes": 67,
         "time": "05:00"
       },
       {
@@ -695,7 +683,7 @@
         "waiting_train": "22301_Shatabdi_Express",
         "waiting_train_type": "superfast",
         "possibly_waiting_for": "17301_Mumbai_Mail",
-        "extra_wait_minutes": 75,
+        "extra_wait_minutes": 67,
         "time": "05:00"
       },
       {
@@ -703,7 +691,7 @@
         "waiting_train": "22301_Shatabdi_Express",
         "waiting_train_type": "superfast",
         "possibly_waiting_for": "12301_Howrah_Rajdhani",
-        "extra_wait_minutes": 75,
+        "extra_wait_minutes": 67,
         "time": "05:00"
       },
       {
@@ -761,21 +749,13 @@
         "possibly_waiting_for": "12301_Howrah_Rajdhani",
         "extra_wait_minutes": 18,
         "time": "08:30"
-      },
-      {
-        "station": "Station_A",
-        "waiting_train": "11301_Udyan_Express",
-        "waiting_train_type": "express",
-        "possibly_waiting_for": "17301_Mumbai_Mail",
-        "extra_wait_minutes": 37,
-        "time": "09:18"
       },
       {
         "station": "Junction_Z",
         "waiting_train": "59301_Mixed_Passenger",
         "waiting_train_type": "passenger",
         "possibly_waiting_for": "12301_Howrah_Rajdhani",
-        "extra_wait_minutes": 535,
+        "extra_wait_minutes": 504,
         "time": "00:00"
       },
       {
@@ -783,7 +763,7 @@
         "waiting_train": "59301_Mixed_Passenger",
         "waiting_train_type": "passenger",
         "possibly_waiting_for": "22301_Shatabdi_Express",
-        "extra_wait_minutes": 535,
+        "extra_wait_minutes": 504,
         "time": "00:00"
       },
       {
@@ -791,7 +771,7 @@
         "waiting_train": "59301_Mixed_Passenger",
         "waiting_train_type": "passenger",
         "possibly_waiting_for": "17301_Mumbai_Mail",
-        "extra_wait_minutes": 535,
+        "extra_wait_minutes": 504,
         "time": "00:00"
       },
       {
@@ -799,32 +779,8 @@
         "waiting_train": "59301_Mixed_Passenger",
         "waiting_train_type": "passenger",
         "possibly_waiting_for": "11301_Udyan_Express",
-        "extra_wait_minutes": 535,
+        "extra_wait_minutes": 504,
         "time": "00:00"
-      },
-      {
-        "station": "Station_B",
-        "waiting_train": "12301_Howrah_Rajdhani",
-        "waiting_train_type": "superfast",
-        "possibly_waiting_for": "59301_Mixed_Passenger",
-        "extra_wait_minutes": 31,
-        "time": "07:58"
-      },
-      {
-        "station": "Station_B",
-        "waiting_train": "12301_Howrah_Rajdhani",
-        "waiting_train_type": "superfast",
-        "possibly_waiting_for": "17301_Mumbai_Mail",
-        "extra_wait_minutes": 31,
-        "time": "07:58"
-      },
-      {
-        "station": "Station_B",
-        "waiting_train": "12301_Howrah_Rajdhani",
-        "waiting_train_type": "superfast",
-        "possibly_waiting_for": "11301_Udyan_Express",
-        "extra_wait_minutes": 31,
-        "time": "07:58"
       }
     ],
     "single_track_conflicts": [
@@ -833,28 +789,28 @@
         "waited_train": "22301_Shatabdi_Express",
         "priority_train": "12301_Howrah_Rajdhani",
         "wait_started": "06:01",
-        "wait_ended": "07:05"
+        "wait_ended": "06:57"
       },
       {
         "section": "Station_J_to_Lonavala_Hold_Point",
         "waited_train": "51301_Local_Passenger",
         "priority_train": "22301_Shatabdi_Express",
-        "wait_started": "07:05",
-        "wait_ended": "08:09"
+        "wait_started": "06:57",
+        "wait_ended": "07:53"
       },
       {
         "section": "Lonavala_Hold_Point_to_Junction_Z",
         "waited_train": "22301_Shatabdi_Express",
         "priority_train": "12301_Howrah_Rajdhani",
-        "wait_started": "07:14",
-        "wait_ended": "08:15"
+        "wait_started": "07:06",
+        "wait_ended": "07:59"
       },
       {
         "section": "Lonavala_Hold_Point_to_Junction_Z",
         "waited_train": "17301_Mumbai_Mail",
         "priority_train": "22301_Shatabdi_Express",
-        "wait_started": "08:15",
-        "wait_ended": "09:30"
+        "wait_started": "07:59",
+        "wait_ended": "08:59"
       }
     ]
   }

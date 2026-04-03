@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 import json
 from enum import Enum
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 class WeatherCondition(Enum):
     CLEAR = "clear"
@@ -1393,6 +1395,161 @@ class EnhancedIndianRailwayOptimizer:
         
         print("\\n" + "=" * 80)
     
+    def print_simple_summary(self, solution):
+        """Print a simple summary table of train schedules"""
+        if solution.get("error"):
+            print(f"ERROR: {solution['error']}")
+            return
+        
+        metrics = solution["performance_metrics"]
+        weather = self._get_weather_scenario()
+        season = weather.get('season', 'normal').title()
+        
+        print("\n" + "=" * 70)
+        print("            TRAIN DELAY OPTIMIZATION - SUMMARY")
+        print("=" * 70)
+        print(f"  Scenario: {self.scenario_date.strftime('%B %d, %Y')} | Weather: {season}")
+        print(f"  Punctuality: {metrics['punctuality_percentage']:.1f}% | Avg Delay: {metrics['average_delay_per_train']:.1f} min")
+        print("=" * 70)
+        
+        # Header
+        print(f"\n{'Train Name':<30} {'Type':<12} {'Priority':<8} {'Delay':<10} {'Status':<10}")
+        print("-" * 70)
+        
+        # Sort trains by priority (highest first)
+        sorted_trains = sorted(self.trains, key=lambda t: t['priority'], reverse=True)
+        
+        for train in sorted_trains:
+            train_id = train["id"]
+            train_data = solution["train_schedules"][train_id]
+            
+            # Clean up train name for display
+            name = train_id.replace("_", " ")
+            if len(name) > 28:
+                name = name[:25] + "..."
+            
+            train_type = train_data['type'].title()
+            priority = train_data['priority']
+            delay = train_data['total_delay']
+            
+            # Status based on delay
+            if delay == 0:
+                status = "✓ On Time"
+            elif delay <= 5:
+                status = "~ Minor"
+            elif delay <= 15:
+                status = "⚠ Delayed"
+            else:
+                status = "✗ Late"
+            
+            print(f"{name:<30} {train_type:<12} {priority:<8} {delay:>3} min    {status:<10}")
+        
+        print("-" * 70)
+        print(f"{'TOTAL':<52} {metrics['total_system_delay_minutes']:>3} min")
+        print("=" * 70)
+        
+        # Key insights
+        insights = solution["operational_insights"]
+        print(f"\n📊 Key Insights:")
+        print(f"   • Weather Impact: {insights['weather_impact']}")
+        print(f"   • Bottleneck Sections: {insights['single_track_bottlenecks']}")
+        print(f"   • Premium Train Status: {insights['premium_train_performance']}")
+
+    def plot_train_timeline(self, solution, save_path: str = None):
+        """Generate a visual timeline chart of train movements"""
+        if solution.get("error"):
+            print(f"ERROR: {solution['error']}")
+            return
+        
+        # Color mapping for train types
+        colors = {
+            'superfast': '#e74c3c',    # Red
+            'express': '#3498db',       # Blue
+            'mail_express': '#9b59b6',  # Purple
+            'passenger': '#2ecc71',     # Green
+            'freight': '#f39c12',       # Orange
+            'goods': '#95a5a6'          # Gray
+        }
+        
+        fig, ax = plt.subplots(figsize=(14, 8))
+        
+        # Sort trains by priority
+        sorted_trains = sorted(self.trains, key=lambda t: t['priority'], reverse=True)
+        train_names = [t['id'].replace('_', ' ')[:25] for t in sorted_trains]
+        
+        y_positions = range(len(sorted_trains))
+        
+        for y_pos, train in zip(y_positions, sorted_trains):
+            train_id = train['id']
+            train_data = solution["train_schedules"][train_id]
+            train_type = train_data['type']
+            color = colors.get(train_type, '#7f8c8d')
+            
+            schedule = train_data['schedule']
+            route = train['route']
+            
+            # Get first departure and last arrival times
+            first_station = route[0]
+            last_station = route[-1]
+            
+            try:
+                dep_time = schedule[first_station]['departure']
+                arr_time = schedule[last_station]['arrival']
+                
+                dep_minutes = int(dep_time.split(':')[0]) * 60 + int(dep_time.split(':')[1])
+                arr_minutes = int(arr_time.split(':')[0]) * 60 + int(arr_time.split(':')[1])
+                
+                # Handle wraparound for overnight trains
+                if arr_minutes < dep_minutes:
+                    arr_minutes += 24 * 60
+                
+                # Draw the bar
+                bar_length = arr_minutes - dep_minutes
+                ax.barh(y_pos, bar_length, left=dep_minutes, height=0.6, 
+                       color=color, alpha=0.8, edgecolor='black', linewidth=0.5)
+                
+                # Add delay indicator
+                delay = train_data['total_delay']
+                if delay > 0:
+                    delay_color = '#e74c3c' if delay > 15 else '#f39c12' if delay > 5 else '#27ae60'
+                    ax.text(arr_minutes + 5, y_pos, f"+{delay}m", 
+                           va='center', ha='left', fontsize=8, color=delay_color, fontweight='bold')
+            except (KeyError, ValueError):
+                continue
+        
+        # Formatting
+        ax.set_yticks(y_positions)
+        ax.set_yticklabels(train_names, fontsize=9)
+        ax.set_xlabel('Time (minutes from midnight)', fontsize=10)
+        ax.set_title(f'Train Schedule Timeline - {self.scenario_date.strftime("%B %d, %Y")}\n'
+                    f'Punctuality: {solution["performance_metrics"]["punctuality_percentage"]:.1f}%', 
+                    fontsize=12, fontweight='bold')
+        
+        # Add time labels on x-axis
+        ax.set_xlim(0, 24*60)
+        hour_ticks = [h*60 for h in range(0, 25, 2)]
+        hour_labels = [f'{h:02d}:00' for h in range(0, 25, 2)]
+        ax.set_xticks(hour_ticks)
+        ax.set_xticklabels(hour_labels, fontsize=8, rotation=45)
+        
+        # Add grid
+        ax.grid(axis='x', alpha=0.3, linestyle='--')
+        ax.set_axisbelow(True)
+        
+        # Legend
+        legend_patches = [mpatches.Patch(color=c, label=t.replace('_', ' ').title()) 
+                         for t, c in colors.items()]
+        ax.legend(handles=legend_patches, loc='upper right', fontsize=8, title='Train Type')
+        
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=150, bbox_inches='tight')
+            print(f"\n📈 Timeline chart saved to: {save_path}")
+        
+        plt.show()
+        return fig
+
     def find_track(self, from_station: str, to_station: str):
         """Find track connection between two stations"""
         for track in self.tracks:
@@ -1451,13 +1608,36 @@ def main():
     print(f"Delay Multiplier: {custom_delay_factor}x")
     print("=" * 80)
     
+    # Select output format
+    print("\nSELECT OUTPUT FORMAT:")
+    print("  1. Simple Summary Table (recommended)")
+    print("  2. Visual Timeline Chart")
+    print("  3. Both (Summary + Chart)")
+    print("  4. Full Detailed Report (original)")
+    
+    try:
+        output_choice = input("\nSelect output [1-4, default: 1]: ").strip()
+        output_choice = int(output_choice) if output_choice else 1
+    except ValueError:
+        output_choice = 1
+    
     optimizer = EnhancedIndianRailwayOptimizer(
         scenario_date=scenario_date,
         custom_delay_factor=custom_delay_factor
     )
     
     solution = optimizer.solve_optimization()
-    optimizer.print_comprehensive_results(solution)
+    
+    # Display based on user choice
+    if output_choice == 1:
+        optimizer.print_simple_summary(solution)
+    elif output_choice == 2:
+        optimizer.plot_train_timeline(solution, save_path="train_timeline.png")
+    elif output_choice == 3:
+        optimizer.print_simple_summary(solution)
+        optimizer.plot_train_timeline(solution, save_path="train_timeline.png")
+    else:
+        optimizer.print_comprehensive_results(solution)
     
     # Export results
     filename = f"optimization_results_{scenario_date.strftime('%Y_%m_%d')}_delay_{custom_delay_factor}.json"

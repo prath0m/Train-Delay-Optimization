@@ -1,5 +1,7 @@
 from typing import Dict
 
+from shap_explainer import run_shap_analysis, print_shap_report
+
 
 def print_comprehensive_results(optimizer, solution: Dict):
     print("\n" + "=" * 80)
@@ -148,6 +150,9 @@ def print_comprehensive_results(optimizer, solution: Dict):
         print(recommendation)
 
     print("\n" + "=" * 80)
+
+    shap_results = run_shap_analysis(optimizer, solution)
+    print_shap_report(optimizer, solution, shap_results)
 
 
 def print_simple_summary(optimizer, solution: Dict):

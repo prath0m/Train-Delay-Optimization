@@ -1,8 +1,3 @@
-===============================================================================
-Enhanced Indian Railway Train Delay Optimization System
-Comprehensive modeling of weather, maintenance, and operational factors
-================================================================================
-
 CUSTOM DELAY CONFIGURATION
 Enter delay factor (0.0 to 2.0):
   - 0.0 = No delays (ideal conditions)
@@ -10,9 +5,9 @@ Enter delay factor (0.0 to 2.0):
   - 1.0 = Normal delays (default)
   - 1.5 = High delays
 
-Delay Factor [default: 1.0]: 0.5
+Delay Factor [default: 1.0]: 
 
-Using delay factor: 0.5
+Using delay factor: 1.0
 
 SELECT SCENARIO:
   1. Monsoon Season (July)
@@ -20,25 +15,43 @@ SELECT SCENARIO:
   3. Summer Heat Season (April)
   4. Normal Season (October)
 
-Select scenario [1-4, default: 1]: 3
+Select scenario [1-4, default: 1]: 2
 
-Selected Scenario: April 15, 2024
-Delay Multiplier: 0.5x
+Selected Scenario: January 15, 2024
+Delay Multiplier: 1.0x
+
+================================================================================
+MAINTENANCE BLOCK CONFIGURATION
+================================================================================
+
+Select maintenance block option:
+  0. No Maintenance (all tracks operational)
+  1. Light Maintenance (Night) - Minor track inspection
+  2. Track Renewal (Station A - Station J)
+  3. Signaling Maintenance (Junction X - Station G)
+  4. Bottleneck Section Maintenance (Lonavala steep climb)
+  5. Multiple Blocks (Heavy Maintenance) [default]
+  6. Full Day Block (Emergency Repair on main line)
+
+Select maintenance [0-6, default: 5]: 0
+
+Selected: No Maintenance
+  No maintenance blocks - all tracks fully operational
 ================================================================================
 
 SELECT OUTPUT FORMAT:
   1. Simple Summary Table (recommended)
   2. Visual Timeline Chart
   3. Both (Summary + Chart)
-  4. Full Detailed Report (original)
+  4. Full Detailed Report
 
-Select output [1-4, default: 1]: 1
+Select output [1-4, default: 1]: 4
 
 ============================================================
 Enhanced Indian Railway Delay Optimization
-Scenario Date: April 15, 2024
-Weather Season: Summer
-Maintenance Blocks: 2
+Scenario Date: January 15, 2024
+Weather Season: Winter
+Maintenance Blocks: 0
 ============================================================
 
 CRITICAL BOTTLENECK SECTIONS (Priority Order):
@@ -47,14 +60,14 @@ CRITICAL BOTTLENECK SECTIONS (Priority Order):
      - Crossing Loops: 3
      - Max Hourly Capacity: 6 trains
      - Priority Factor: 3.00x
-  2. Station_J_to_Lonavala_Hold_Point
+  2. Station_A_to_Lonavala_Hold_Point
      - Gradient: steep_climb
      - Crossing Loops: 2
      - Max Hourly Capacity: 4 trains
      - Priority Factor: 2.00x
-  3. Station_G_to_H_Loop
+  3. Station_H_to_H_Loop
      - Gradient: level
-     - Crossing Loops: 1
+     - Crossing Loops: 4
      - Max Hourly Capacity: 4 trains
      - Priority Factor: 1.00x
 
@@ -72,28 +85,546 @@ Building comprehensive optimization model...
 
 Solving optimization problem...
 
-======================================================================
-            TRAIN DELAY OPTIMIZATION - SUMMARY
-======================================================================
-  Scenario: April 15, 2024 | Weather: Summer
-  Punctuality: 100.0% | Avg Delay: 0.2 min
-======================================================================
+================================================================================
+COMPREHENSIVE INDIAN RAILWAY OPTIMIZATION RESULTS
+================================================================================
 
-Train Name                     Type         Priority Delay      Status    
-----------------------------------------------------------------------
-12301 Howrah Rajdhani          Superfast    5.0        0 min    ✓ On Time 
-22301 Shatabdi Express         Superfast    4.5        0 min    ✓ On Time 
-11301 Udyan Express            Express      4.0        0 min    ✓ On Time 
-17301 Mumbai Mail              Mail_Express 3.5        0 min    ✓ On Time 
-51301 Local Passenger          Passenger    2.0        2 min    ~ Minor   
-59301 Mixed Passenger          Passenger    1.8        0 min    ✓ On Time 
-56301 Container Freight        Freight      1.5        0 min    ✓ On Time 
-52301 Coal Goods               Goods        1.0        0 min    ✓ On Time 
-----------------------------------------------------------------------
-TOTAL                                                  2 min
-======================================================================
+Solution Status: OPTIMAL
+Objective Value: 1015284.0
+Solve Time: 0.06 seconds
 
-📊 Key Insights:
-   • Weather Impact: Low
-   • Bottleneck Sections: 3
-   • Premium Train Status: Good
+SYSTEM PERFORMANCE METRICS
+   Total System Delay: 33 minutes
+   Average Delay per Train: 4.1 minutes
+   Punctuality Rate: 87.5% (7/8 trains)
+
+OPERATIONAL ANALYSIS
+   Weather Impact: Low
+   Maintenance Impact: Low
+   Single Track Bottlenecks: 3 sections
+   Critical Bottlenecks: 3 sections
+   Premium Train Performance: Good
+
+BOTTLENECK DELAY ANALYSIS
+   Maximum Bottleneck Delay: 0 minutes
+   Lonavala_Hold_Point_to_Junction_Z: 0 min [LOW]
+   Station_A_to_Lonavala_Hold_Point: 0 min [LOW]
+   Station_H_to_H_Loop: 0 min [LOW]
+
+OPTIMIZED TRAIN SCHEDULES
+--------------------------------------------------------------------------------
+
+================================================================================
+TRAIN: 12301_Howrah_Rajdhani
+   Type: Superfast | Priority: 5.0 | Total Delay: 0 min
+================================================================================
+
+   Station 1/6: Station_C
+      Arrival:   36:00 | Departure: 05:07
+      Dwell:       0 min (Min: 11 min, Extra wait: 0 min)
+      [OVERTOOK] 56301_Container_Freight (Priority 1.5)
+      [OVERTOOK] 52301_Coal_Goods (Priority 1.0)
+      [OVERTOOK] 22301_Shatabdi_Express (Priority 4.5)
+      [OVERTOOK] 11301_Udyan_Express (Priority 4.0)
+      [OVERTOOK] 51301_Local_Passenger (Priority 2.0)
+      [OVERTOOK] 17301_Mumbai_Mail (Priority 3.5)
+      -> Station_J: 10 min (Base: 10 min, Extra: 0 min)
+
+   Station 2/6: Station_J
+      Arrival:   05:17 | Departure: 05:30
+      Dwell:      13 min (Min: 13 min, Extra wait: 0 min)
+      -> Station_A: 22 min (Base: 15 min, Extra: 7 min)
+
+   Station 3/6: Station_A
+      Arrival:   05:52 | Departure: 05:57
+      Dwell:       5 min (Min: 5 min, Extra wait: 0 min)
+      -> Lonavala_Hold_Point: 51 min (Base: 45 min, Extra: 6 min)
+
+   Station 4/6: Lonavala_Hold_Point
+      Arrival:   06:48 | Departure: 07:00
+      Dwell:      12 min (Min: 12 min, Extra wait: 0 min)
+      -> Junction_Z: 18 min (Base: 12 min, Extra: 6 min)
+
+   Station 5/6: Junction_Z
+      Arrival:   07:18 | Departure: 07:30
+      Dwell:      12 min (Min: 12 min, Extra wait: 0 min)
+      [OVERTOOK] 59301_Mixed_Passenger (Priority 1.8)
+      -> Station_B: 16 min (Base: 11 min, Extra: 5 min)
+
+   Station 6/6: Station_B
+      Arrival:   07:46 | Departure: 07:55
+      Dwell:       0 min (Min: 5 min, Extra wait: 0 min)
+      [OVERTOOK] 17301_Mumbai_Mail (Priority 3.5)
+
+================================================================================
+TRAIN: 22301_Shatabdi_Express
+   Type: Superfast | Priority: 4.5 | Total Delay: 0 min
+================================================================================
+
+   Station 1/5: Station_C
+      Arrival:   07:30 | Departure: 06:00
+      Dwell:       0 min (Min: 8 min, Extra wait: 0 min)
+      [OVERTOOK] 52301_Coal_Goods (Priority 1.0)
+      [STOPPED FOR] 12301_Howrah_Rajdhani (Priority 5.0) - Waited -90 min
+      -> Station_J: 13 min (Base: 10 min, Extra: 3 min)
+
+   Station 2/5: Station_J
+      Arrival:   06:13 | Departure: 06:23
+      Dwell:      10 min (Min: 10 min, Extra wait: 0 min)
+      [OVERTOOK] 56301_Container_Freight (Priority 1.5)
+      -> Station_A: 26 min (Base: 15 min, Extra: 11 min)
+
+   Station 3/5: Station_A
+      Arrival:   06:49 | Departure: 06:51
+      Dwell:       2 min (Min: 2 min, Extra wait: 0 min)
+      -> Lonavala_Hold_Point: 51 min (Base: 45 min, Extra: 6 min)
+
+   Station 4/5: Lonavala_Hold_Point
+      Arrival:   07:42 | Departure: 07:51
+      Dwell:       9 min (Min: 9 min, Extra wait: 0 min)
+      -> Junction_Z: 13 min (Base: 12 min, Extra: 1 min)
+
+   Station 5/5: Junction_Z
+      Arrival:   08:04 | Departure: 08:28
+      Dwell:       0 min (Min: 9 min, Extra wait: 0 min)
+      [OVERTOOK] 59301_Mixed_Passenger (Priority 1.8)
+
+================================================================================
+TRAIN: 11301_Udyan_Express
+   Type: Express | Priority: 4.0 | Total Delay: 3 min
+================================================================================
+
+   Station 1/7: Station_C
+      Arrival:   07:35 | Departure: 08:11
+      Dwell:       0 min (Min: 12 min, Extra wait: 0 min)
+      [STOPPED FOR] 12301_Howrah_Rajdhani (Priority 5.0) - Waited 36 min
+      Extended wait: 24 min (possibly for 51301_Local_Passenger)
+      Extended wait: 24 min (possibly for 17301_Mumbai_Mail)
+      Extended wait: 24 min (possibly for 12301_Howrah_Rajdhani)
+      -> Station_J: 10 min (Base: 10 min, Extra: 0 min)
+
+   Station 2/7: Station_J
+      Arrival:   08:21 | Departure: 08:35
+      Dwell:      14 min (Min: 14 min, Extra wait: 0 min)
+      -> Station_A: 22 min (Base: 15 min, Extra: 7 min)
+
+   Station 3/7: Station_A
+      Arrival:   08:57 | Departure: 09:03
+      Dwell:       6 min (Min: 6 min, Extra wait: 0 min)
+      Total Delay: 3 min [LOW]
+         - Weather: 3 min
+      -> Lonavala_Hold_Point: 51 min (Base: 45 min, Extra: 6 min)
+
+   Station 4/7: Lonavala_Hold_Point
+      Arrival:   09:54 | Departure: 10:07
+      Dwell:      13 min (Min: 13 min, Extra wait: 0 min)
+      -> Junction_Z: 13 min (Base: 12 min, Extra: 1 min)
+
+   Station 5/7: Junction_Z
+      Arrival:   10:20 | Departure: 10:33
+      Dwell:      13 min (Min: 13 min, Extra wait: 0 min)
+      [OVERTOOK] 17301_Mumbai_Mail (Priority 3.5)
+      -> Station_H: 8 min (Base: 8 min, Extra: 0 min)
+
+   Station 6/7: Station_H
+      Arrival:   10:41 | Departure: 10:47
+      Dwell:       6 min (Min: 6 min, Extra wait: 0 min)
+      -> Junction_X: 6 min (Base: 6 min, Extra: 0 min)
+
+   Station 7/7: Junction_X
+      Arrival:   10:53 | Departure: 10:57
+      Dwell:       0 min (Min: 3 min, Extra wait: 0 min)
+
+================================================================================
+TRAIN: 17301_Mumbai_Mail
+   Type: Mail_Express | Priority: 3.5 | Total Delay: 0 min
+================================================================================
+
+   Station 1/6: Station_B
+      Arrival:   00:00 | Departure: 10:00
+      Dwell:       0 min (Min: 6 min, Extra wait: 0 min)
+      [STOPPED FOR] 12301_Howrah_Rajdhani (Priority 5.0) - Waited 600 min
+      Extended wait: 595 min (possibly for 12301_Howrah_Rajdhani)
+      -> Junction_Z: 14 min (Base: 11 min, Extra: 3 min)
+
+   Station 2/6: Junction_Z
+      Arrival:   10:14 | Departure: 10:38
+      Dwell:      24 min (Min: 13 min, Extra wait: 11 min)
+      [STOPPED FOR] 11301_Udyan_Express (Priority 4.0) - Waited 24 min
+      -> Lonavala_Hold_Point: 15 min (Base: 12 min, Extra: 3 min)
+
+   Station 3/6: Lonavala_Hold_Point
+      Arrival:   10:53 | Departure: 11:06
+      Dwell:      13 min (Min: 13 min, Extra wait: 0 min)
+      -> Station_A: 58 min (Base: 45 min, Extra: 13 min)
+
+   Station 4/6: Station_A
+      Arrival:   12:04 | Departure: 12:09
+      Dwell:       5 min (Min: 5 min, Extra wait: 0 min)
+      -> Station_J: 15 min (Base: 15 min, Extra: 0 min)
+
+   Station 5/6: Station_J
+      Arrival:   12:24 | Departure: 12:38
+      Dwell:      14 min (Min: 14 min, Extra wait: 0 min)
+      -> Station_C: 10 min (Base: 10 min, Extra: 0 min)
+
+   Station 6/6: Station_C
+      Arrival:   12:48 | Departure: 08:16
+      Dwell:       0 min (Min: 12 min, Extra wait: 0 min)
+      [OVERTOOK] 51301_Local_Passenger (Priority 2.0)
+      [STOPPED FOR] 12301_Howrah_Rajdhani (Priority 5.0) - Waited -272 min
+
+================================================================================
+TRAIN: 51301_Local_Passenger
+   Type: Passenger | Priority: 2.0 | Total Delay: 15 min
+================================================================================
+
+   Station 1/4: Station_C
+      Arrival:   07:35 | Departure: 08:30
+      Dwell:       0 min (Min: 6 min, Extra wait: 0 min)
+      [STOPPED FOR] 17301_Mumbai_Mail (Priority 3.5) - Waited 55 min
+      [STOPPED FOR] 12301_Howrah_Rajdhani (Priority 5.0) - Waited 55 min
+      Extended wait: 49 min (possibly for 17301_Mumbai_Mail)
+      Extended wait: 49 min (possibly for 12301_Howrah_Rajdhani)
+      -> Station_J: 13 min (Base: 10 min, Extra: 3 min)
+
+   Station 2/4: Station_J
+      Arrival:   08:43 | Departure: 08:51
+      Dwell:       8 min (Min: 8 min, Extra wait: 0 min)
+      -> Station_A: 34 min (Base: 15 min, Extra: 19 min)
+
+   Station 3/4: Station_A
+      Arrival:   09:25 | Departure: 09:57
+      Dwell:      32 min (Min: 4 min, Extra wait: 28 min)
+      Total Delay: 15 min [MED]
+         - Weather: 15 min
+      Extended wait: 28 min (possibly for 17301_Mumbai_Mail)
+      -> Lonavala_Hold_Point: 58 min (Base: 45 min, Extra: 13 min)
+
+   Station 4/4: Lonavala_Hold_Point
+      Arrival:   10:55 | Departure: 04:53
+      Dwell:       0 min (Min: 7 min, Extra wait: 0 min)
+
+================================================================================
+TRAIN: 59301_Mixed_Passenger
+   Type: Passenger | Priority: 1.8 | Total Delay: 0 min
+================================================================================
+
+   Station 1/4: Junction_Z
+      Arrival:   00:00 | Departure: 08:33
+      Dwell:       0 min (Min: 7 min, Extra wait: 0 min)
+      [STOPPED FOR] 12301_Howrah_Rajdhani (Priority 5.0) - Waited 513 min
+      [STOPPED FOR] 22301_Shatabdi_Express (Priority 4.5) - Waited 513 min
+      Extended wait: 501 min (possibly for 12301_Howrah_Rajdhani)
+      Extended wait: 501 min (possibly for 22301_Shatabdi_Express)
+      Extended wait: 501 min (possibly for 17301_Mumbai_Mail)
+      Extended wait: 501 min (possibly for 11301_Udyan_Express)
+      -> Station_H: 9 min (Base: 8 min, Extra: 1 min)
+
+   Station 2/4: Station_H
+      Arrival:   08:42 | Departure: 08:47
+      Dwell:       5 min (Min: 5 min, Extra wait: 0 min)
+      -> Junction_X: 6 min (Base: 6 min, Extra: 0 min)
+
+   Station 3/4: Junction_X
+      Arrival:   08:53 | Departure: 08:57
+      Dwell:       4 min (Min: 4 min, Extra wait: 0 min)
+      -> Station_G: 9 min (Base: 9 min, Extra: 0 min)
+
+   Station 4/4: Station_G
+      Arrival:   09:06 | Departure: 00:00
+      Dwell:       0 min (Min: 3 min, Extra wait: 0 min)
+
+================================================================================
+TRAIN: 56301_Container_Freight
+   Type: Freight | Priority: 1.5 | Total Delay: 15 min
+================================================================================
+
+   Station 1/4: Karjat_Hold_Point
+      Arrival:   06:30 | Departure: 05:00
+      Dwell:       0 min (Min: 20 min, Extra wait: 0 min)
+      -> Station_C: 12 min (Base: 8 min, Extra: 4 min)
+
+   Station 2/4: Station_C
+      Arrival:   05:12 | Departure: 06:00
+      Dwell:      48 min (Min: 17 min, Extra wait: 31 min)
+      [STOPPED FOR] 12301_Howrah_Rajdhani (Priority 5.0) - Waited 48 min
+      Extended wait: 37 min (possibly for 52301_Coal_Goods)
+      Extended wait: 37 min (possibly for 22301_Shatabdi_Express)
+      Extended wait: 37 min (possibly for 11301_Udyan_Express)
+      Extended wait: 37 min (possibly for 51301_Local_Passenger)
+      Extended wait: 37 min (possibly for 17301_Mumbai_Mail)
+      Extended wait: 37 min (possibly for 12301_Howrah_Rajdhani)
+      -> Station_J: 10 min (Base: 10 min, Extra: 0 min)
+
+   Station 3/4: Station_J
+      Arrival:   06:10 | Departure: 06:30
+      Dwell:      20 min (Min: 20 min, Extra wait: 0 min)
+      [STOPPED FOR] 22301_Shatabdi_Express (Priority 4.5) - Waited 20 min
+      -> Station_A: 37 min (Base: 15 min, Extra: 22 min)
+
+   Station 4/4: Station_A
+      Arrival:   07:07 | Departure: 03:50
+      Dwell:       0 min (Min: 10 min, Extra wait: 0 min)
+      Total Delay: 15 min [MED]
+         - Weather: 15 min
+
+================================================================================
+TRAIN: 52301_Coal_Goods
+   Type: Goods | Priority: 1.0 | Total Delay: 0 min
+================================================================================
+
+   Station 1/3: Karjat_Hold_Point
+      Arrival:   00:00 | Departure: 05:00
+      Dwell:       0 min (Min: 25 min, Extra wait: 0 min)
+      Extended wait: 297 min (possibly for 56301_Container_Freight)
+      -> Station_C: 12 min (Base: 8 min, Extra: 4 min)
+
+   Station 2/3: Station_C
+      Arrival:   05:12 | Departure: 06:05
+      Dwell:      53 min (Min: 5 min, Extra wait: 48 min)
+      [STOPPED FOR] 22301_Shatabdi_Express (Priority 4.5) - Waited 53 min
+      [STOPPED FOR] 12301_Howrah_Rajdhani (Priority 5.0) - Waited 53 min
+      Extended wait: 45 min (possibly for 22301_Shatabdi_Express)
+      Extended wait: 45 min (possibly for 11301_Udyan_Express)
+      Extended wait: 45 min (possibly for 51301_Local_Passenger)
+      Extended wait: 45 min (possibly for 17301_Mumbai_Mail)
+      Extended wait: 45 min (possibly for 12301_Howrah_Rajdhani)
+      -> Station_J: 14 min (Base: 10 min, Extra: 4 min)
+
+   Station 3/3: Station_J
+      Arrival:   06:19 | Departure: 06:35
+      Dwell:      16 min (Min: 3 min, Extra wait: 13 min)
+
+TRAIN INTERACTIONS & PRIORITY EVENTS
+--------------------------------------------------------------------------------
+
+OVERTAKING EVENTS (13):
+  Location: Station_C @ 05:12
+     Stopped: 56301_Container_Freight (freight, Priority: 1.5)
+     Overtook: 12301_Howrah_Rajdhani (superfast, Priority: 5.0)
+     Wait time: 48 minutes
+
+  Location: Station_C @ 05:12
+     Stopped: 52301_Coal_Goods (goods, Priority: 1.0)
+     Overtook: 22301_Shatabdi_Express (superfast, Priority: 4.5)
+     Wait time: 53 minutes
+
+  Location: Station_C @ 05:12
+     Stopped: 52301_Coal_Goods (goods, Priority: 1.0)
+     Overtook: 12301_Howrah_Rajdhani (superfast, Priority: 5.0)
+     Wait time: 53 minutes
+
+  Location: Station_C @ 07:30
+     Stopped: 22301_Shatabdi_Express (superfast, Priority: 4.5)
+     Overtook: 12301_Howrah_Rajdhani (superfast, Priority: 5.0)
+     Wait time: -90 minutes
+
+  Location: Station_C @ 07:35
+     Stopped: 11301_Udyan_Express (express, Priority: 4.0)
+     Overtook: 12301_Howrah_Rajdhani (superfast, Priority: 5.0)
+     Wait time: 36 minutes
+
+  Location: Station_C @ 07:35
+     Stopped: 51301_Local_Passenger (passenger, Priority: 2.0)
+     Overtook: 17301_Mumbai_Mail (mail_express, Priority: 3.5)
+     Wait time: 55 minutes
+
+  Location: Station_C @ 07:35
+     Stopped: 51301_Local_Passenger (passenger, Priority: 2.0)
+     Overtook: 12301_Howrah_Rajdhani (superfast, Priority: 5.0)
+     Wait time: 55 minutes
+
+  Location: Station_C @ 12:48
+     Stopped: 17301_Mumbai_Mail (mail_express, Priority: 3.5)
+     Overtook: 12301_Howrah_Rajdhani (superfast, Priority: 5.0)
+     Wait time: -272 minutes
+
+  Location: Station_J @ 06:10
+     Stopped: 56301_Container_Freight (freight, Priority: 1.5)
+     Overtook: 22301_Shatabdi_Express (superfast, Priority: 4.5)
+     Wait time: 20 minutes
+
+  Location: Junction_Z @ 00:00
+     Stopped: 59301_Mixed_Passenger (passenger, Priority: 1.8)
+     Overtook: 12301_Howrah_Rajdhani (superfast, Priority: 5.0)
+     Wait time: 513 minutes
+
+  Location: Junction_Z @ 00:00
+     Stopped: 59301_Mixed_Passenger (passenger, Priority: 1.8)
+     Overtook: 22301_Shatabdi_Express (superfast, Priority: 4.5)
+     Wait time: 513 minutes
+
+  Location: Junction_Z @ 10:14
+     Stopped: 17301_Mumbai_Mail (mail_express, Priority: 3.5)
+     Overtook: 11301_Udyan_Express (express, Priority: 4.0)
+     Wait time: 24 minutes
+
+  Location: Station_B @ 00:00
+     Stopped: 17301_Mumbai_Mail (mail_express, Priority: 3.5)
+     Overtook: 12301_Howrah_Rajdhani (superfast, Priority: 5.0)
+     Wait time: 600 minutes
+
+
+EXTENDED WAITING EVENTS (23):
+  Location: Karjat_Hold_Point @ 00:00
+     Train: 52301_Coal_Goods (goods)
+     Extra wait: 297 minutes
+     Possibly waiting for: 56301_Container_Freight
+
+  Location: Station_C @ 05:12
+     Train: 56301_Container_Freight (freight)
+     Extra wait: 37 minutes
+     Possibly waiting for: 52301_Coal_Goods
+
+  Location: Station_C @ 05:12
+     Train: 56301_Container_Freight (freight)
+     Extra wait: 37 minutes
+     Possibly waiting for: 22301_Shatabdi_Express
+
+  Location: Station_C @ 05:12
+     Train: 56301_Container_Freight (freight)
+     Extra wait: 37 minutes
+     Possibly waiting for: 11301_Udyan_Express
+
+  Location: Station_C @ 05:12
+     Train: 56301_Container_Freight (freight)
+     Extra wait: 37 minutes
+     Possibly waiting for: 51301_Local_Passenger
+
+
+SINGLE TRACK SEQUENCING (6):
+  Section: Station_A_to_Lonavala_Hold_Point
+     Waited: 22301_Shatabdi_Express waited for
+     Priority: 12301_Howrah_Rajdhani (higher priority)
+     Time: 05:57 -> 06:51
+
+  Section: Station_A_to_Lonavala_Hold_Point
+     Waited: 11301_Udyan_Express waited for
+     Priority: 22301_Shatabdi_Express (higher priority)
+     Time: 06:51 -> 09:03
+
+  Section: Station_A_to_Lonavala_Hold_Point
+     Waited: 51301_Local_Passenger waited for
+     Priority: 11301_Udyan_Express (higher priority)
+     Time: 09:03 -> 09:57
+
+  Section: Lonavala_Hold_Point_to_Junction_Z
+     Waited: 22301_Shatabdi_Express waited for
+     Priority: 12301_Howrah_Rajdhani (higher priority)
+     Time: 07:00 -> 07:51
+
+  Section: Lonavala_Hold_Point_to_Junction_Z
+     Waited: 11301_Udyan_Express waited for
+     Priority: 22301_Shatabdi_Express (higher priority)
+     Time: 07:51 -> 10:07
+
+  Section: Lonavala_Hold_Point_to_Junction_Z
+     Waited: 17301_Mumbai_Mail waited for
+     Priority: 11301_Udyan_Express (higher priority)
+     Time: 10:07 -> 11:06
+
+
+OPERATIONAL RECOMMENDATIONS
+--------------------------------------------------------------------------------
+[INFRASTRUCTURE] 3 single track sections causing delays
+   - HIGHEST PRIORITY: Double Station_J to Lonavala_Hold_Point (steep climb section)
+   - HIGHEST PRIORITY: Double Lonavala_Hold_Point to Junction_Z (critical bridged section)
+   - MEDIUM PRIORITY: Expand H_Loop crossing capacity at Station_H
+   - Implement automatic block signaling on all single-track sections
+
+================================================================================
+
+  [SHAP] Running optimizer variations to build surrogate training data...
+  [SHAP] Surrogate model trained on 80 samples.
+
+================================================================================
+EXPLAINABLE AI  -  SHAP DELAY DRIVER ANALYSIS
+================================================================================
+
+  Surrogate model baseline (mean predicted delay): 6.2 min
+  SHAP values quantify how much each factor ADDS (+) or REMOVES (-)
+  minutes of delay relative to that baseline for each train.
+
+  GLOBAL FEATURE IMPORTANCE  (Mean |SHAP Value| across all trains)
+  ------------------------------------------------------------
+  Weather Delay               :  6.30 min  [##############################]
+  Global Delay Factor         :  0.34 min  [#]
+  Train Priority              :  0.00 min  []
+  Bottleneck Sections         :  0.00 min  []
+  Single Track Sections       :  0.00 min  []
+  Steep Grade Sections        :  0.00 min  []
+  Maintenance Delay           :  0.00 min  []
+  Congestion Delay            :  0.00 min  []
+  Operational Delay           :  0.00 min  []
+
+  PER-TRAIN SHAP CONTRIBUTIONS
+  ------------------------------------------------------------
+
+  [12301 Howrah Rajdhani]
+    Actual Delay      :    0 min
+    Surrogate Predict :    0.0 min
+    Baseline          :    6.2 min
+    SHAP Contributions (sorted by magnitude):
+      Weather Delay               :  -5.86 min  [--------------------]  (reduces  delay)
+      Global Delay Factor         :  -0.34 min  [-                   ]  (reduces  delay)
+
+  [22301 Shatabdi Express]
+    Actual Delay      :    0 min
+    Surrogate Predict :    0.0 min
+    Baseline          :    6.2 min
+    SHAP Contributions (sorted by magnitude):
+      Weather Delay               :  -5.86 min  [--------------------]  (reduces  delay)
+      Global Delay Factor         :  -0.34 min  [-                   ]  (reduces  delay)
+
+  [11301 Udyan Express]
+    Actual Delay      :    3 min
+    Surrogate Predict :    3.0 min
+    Baseline          :    6.2 min
+    SHAP Contributions (sorted by magnitude):
+      Weather Delay               :  -2.86 min  [--------------------]  (reduces  delay)
+      Global Delay Factor         :  -0.34 min  [--                  ]  (reduces  delay)
+
+  [17301 Mumbai Mail]
+    Actual Delay      :    0 min
+    Surrogate Predict :    0.0 min
+    Baseline          :    6.2 min
+    SHAP Contributions (sorted by magnitude):
+      Weather Delay               :  -5.86 min  [--------------------]  (reduces  delay)
+      Global Delay Factor         :  -0.34 min  [-                   ]  (reduces  delay)
+
+  [51301 Local Passenger]
+    Actual Delay      :   15 min
+    Surrogate Predict :   15.0 min
+    Baseline          :    6.2 min
+    SHAP Contributions (sorted by magnitude):
+      Weather Delay               :  +9.14 min  [++++++++++++++++++++]  (increases delay)
+      Global Delay Factor         :  -0.34 min  [-                   ]  (reduces  delay)
+
+  [59301 Mixed Passenger]
+    Actual Delay      :    0 min
+    Surrogate Predict :    0.0 min
+    Baseline          :    6.2 min
+    SHAP Contributions (sorted by magnitude):
+      Weather Delay               :  -5.86 min  [--------------------]  (reduces  delay)
+      Global Delay Factor         :  -0.34 min  [-                   ]  (reduces  delay)
+
+  [56301 Container Freight]
+    Actual Delay      :   15 min
+    Surrogate Predict :   15.0 min
+    Baseline          :    6.2 min
+    SHAP Contributions (sorted by magnitude):
+      Weather Delay               :  +9.14 min  [++++++++++++++++++++]  (increases delay)
+      Global Delay Factor         :  -0.34 min  [-                   ]  (reduces  delay)
+
+  [52301 Coal Goods]
+    Actual Delay      :    0 min
+    Surrogate Predict :    0.0 min
+    Baseline          :    6.2 min
+    SHAP Contributions (sorted by magnitude):
+      Weather Delay               :  -5.86 min  [--------------------]  (reduces  delay)
+      Global Delay Factor         :  -0.34 min  [-                   ]  (reduces  delay)
+
+
+Results exported to 'optimization_results_2024_01_15_delay_1.0.json'
+(venv) prathameshkale@Prathams-MacBook Train delay optimization % 

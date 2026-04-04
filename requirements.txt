@@ -6,3 +6,9 @@ ortools>=9.8.3296
 
 # Numerical computations
 numpy>=1.24.0
+
+# Machine learning (surrogate model for SHAP)
+scikit-learn>=1.3.0
+
+# Explainable AI
+shap>=0.44.0

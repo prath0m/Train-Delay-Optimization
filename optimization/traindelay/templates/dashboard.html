@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Railway AI — Live Control</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #060d17;
+      --surface: #0c1825;
+      --surface2: #0f2035;
+      --border: #1a2d45;
+      --accent: #f97316;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --radius: 12px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Particles ── */
+    #bgCanvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 0; opacity: 0.5;
+    }
+
+    /* ── Keyframes ── */
+    @keyframes float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+    @keyframes spin     { to{transform:rotate(360deg)} }
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes glow-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes slide-in { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes shimmer  {
+      0%  { background-position: -200% 0; }
+      100%{ background-position:  200% 0; }
+    }
+    @keyframes trk-pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+    @keyframes scan-line {
+      0%  { transform: translateY(-100%); }
+      100%{ transform: translateY(100%); }
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 200;
+      background: linear-gradient(135deg, #0c1825 0%, #060d17 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 26px;
+      display: flex; align-items: center; gap: 14px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 30px rgba(0,0,0,.5);
+    }
+    .logo {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #f97316, #dc2626);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 21px;
+      animation: float 3s ease-in-out infinite;
+      box-shadow: 0 0 22px rgba(249,115,22,.45);
+    }
+    header h1 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+    header p  { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+    .hd-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .classic-link {
+      padding: 5px 13px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 11.5px; color: var(--muted);
+      text-decoration: none; transition: all .2s;
+    }
+    .classic-link:hover { border-color: var(--blue); color: var(--blue); }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: glow-pulse 2s ease-in-out infinite;
+    }
+    .status-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 11.5px; font-weight: 600;
+      background: rgba(16,185,129,.1);
+      color: var(--green);
+      border: 1px solid rgba(16,185,129,.25);
+    }
+
+    /* ── Layout ── */
+    .layout {
+      position: relative; z-index: 1;
+      display: grid;
+      grid-template-columns: 308px 1fr;
+      height: calc(100vh - 67px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 18px 14px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .sidebar::-webkit-scrollbar { width: 3px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .sec-lbl {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--muted);
+    }
+    .card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 11px; padding: 13px;
+    }
+    .card-title {
+      font-size: 11.5px; font-weight: 600;
+      color: var(--text); margin-bottom: 11px;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .ci {
+      width: 20px; height: 20px; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+    }
+    label.fl { font-size: 10.5px; color: var(--muted); display: block; margin-bottom: 5px; }
+    .fg { margin-bottom: 11px; }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%; height: 3px; background: var(--border);
+      border-radius: 2px; outline: none; cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 13px; height: 13px; border-radius: 50%;
+      background: var(--accent); cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(249,115,22,.2), 0 0 10px rgba(249,115,22,.4);
+    }
+    .rr { display: flex; align-items: center; gap: 9px; }
+    .rv { font-size: 13px; font-weight: 700; color: var(--accent); min-width: 32px; text-align: right; }
+    .rg { display: flex; flex-direction: column; gap: 4px; }
+    .ro {
+      display: flex; align-items: flex-start; gap: 7px;
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      border-radius: 7px; cursor: pointer; transition: all .15s;
+    }
+    .ro:hover { border-color: var(--blue); background: rgba(59,130,246,.05); }
+    .ro input[type=radio] { display: none; }
+    .ro.sel { border-color: var(--blue); background: rgba(59,130,246,.08); }
+    .rd {
+      width: 11px; height: 11px; border-radius: 50%;
+      border: 2px solid var(--border); flex-shrink: 0;
+      margin-top: 1px; transition: all .15s;
+    }
+    .ro.sel .rd { border-color: var(--blue); background: var(--blue); box-shadow: 0 0 7px rgba(59,130,246,.5); }
+    .rl { color: var(--text); font-weight: 500; font-size: 11px; }
+    .rs { color: var(--muted); font-size: 10px; margin-top: 1px; }
+
+    /* ── Buttons ── */
+    .btn-p {
+      width: 100%; padding: 10px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: #fff; border: none; border-radius: 8px;
+      font-size: 12.5px; font-weight: 700; cursor: pointer;
+      transition: all .2s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      box-shadow: 0 4px 14px rgba(59,130,246,.3);
+    }
+    .btn-p:hover:not(:disabled) {
+      transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,.45);
+    }
+    .btn-p:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .btn-s {
+      width: 100%; padding: 9px;
+      background: rgba(139,92,246,.1);
+      color: var(--purple); border: 1px solid rgba(139,92,246,.3);
+      border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all .2s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .btn-s:hover:not(:disabled) {
+      background: rgba(139,92,246,.18);
+      border-color: rgba(139,92,246,.55);
+      box-shadow: 0 0 16px rgba(139,92,246,.18);
+    }
+    .btn-s:disabled { opacity: .4; cursor: not-allowed; }
+    .sp {
+      width: 13px; height: 13px;
+      border: 2px solid rgba(255,255,255,.2);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    .btn-p.ld .sp, .btn-s.ld .sp { display: block; }
+    .shap-hint-txt {
+      font-size: 10px; color: var(--muted);
+      text-align: center; line-height: 1.5;
+    }
+
+    /* ── Main ── */
+    .main {
+      overflow-y: auto; background: var(--bg);
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .main::-webkit-scrollbar { width: 4px; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Section header ── */
+    .sh {
+      font-size: 11.5px; font-weight: 700; color: var(--text);
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .sh .cnt { margin-left: auto; font-size: 10.5px; color: var(--muted); font-weight: 400; }
+
+    /* ── Network Map ── */
+    .net-section { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+    .net-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 13px; overflow: hidden;
+      position: relative;
+    }
+    .net-wrap::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(59,130,246,.5), transparent);
+    }
+    /* Scan-line overlay */
+    .net-scan {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none; overflow: hidden; border-radius: 13px;
+    }
+    .net-scan::after {
+      content: '';
+      position: absolute; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, rgba(59,130,246,.3) 50%, transparent 100%);
+      animation: scan-line 6s linear infinite;
+    }
+    #networkSvg { width: 100%; height: auto; display: block; }
+    .net-legend {
+      display: flex; gap: 14px; flex-wrap: wrap;
+      padding: 9px 14px;
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,.15);
+    }
+    .lg-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
+    .lg-dot  { width: 8px; height: 8px; border-radius: 50%; }
+    .lg-line { width: 18px; height: 2px; border-radius: 1px; }
+
+    /* ── Metrics ── */
+    .mtr-section { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+    .mtr-grid {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 11px;
+    }
+    .mtr-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 11px; padding: 15px;
+      position: relative; overflow: hidden;
+      animation: fadeUp .45s ease both;
+      transition: transform .2s;
+    }
+    .mtr-card:hover { transform: translateY(-2px); }
+    .mtr-top {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; border-radius: 11px 11px 0 0;
+    }
+    .mtr-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; }
+    .mtr-val { font-size: 29px; font-weight: 800; line-height: 1; }
+    .mtr-sub { font-size: 10.5px; color: var(--muted); margin-top: 4px; }
+    .mtr-ico { position: absolute; bottom: 10px; right: 12px; font-size: 22px; opacity: .1; }
+
+    /* ── Insights ── */
+    .ins-section { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+    .ins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .ins-card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 13px; }
+    .ins-rows { display: flex; flex-direction: column; gap: 0; }
+    .ins-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11.5px; padding: 7px 0; border-bottom: 1px solid var(--border);
+    }
+    .ins-row:last-child { border-bottom: none; }
+    .ins-key { color: var(--muted); }
+    .ins-val { color: var(--text); font-weight: 600; }
+    .mb-list { display: flex; flex-direction: column; gap: 5px; }
+    .mb-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 9px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; font-size: 10.5px;
+    }
+    .mb-name { flex: 1; font-weight: 500; }
+    .mb-time { color: var(--muted); }
+    .mb-badge { padding: 2px 6px; border-radius: 5px; font-size: 9.5px; font-weight: 700; background: rgba(245,158,11,.12); color: var(--yellow); }
+    .mb-delay { font-weight: 700; color: var(--red); }
+
+    /* ── SHAP ── */
+    .shap-section {
+      padding: 18px 22px; border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(139,92,246,.035) 0%, transparent 100%);
+    }
+    .shap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .shap-card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 14px; }
+    .shap-ct { font-size: 11.5px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+    .chart-box { position: relative; height: 260px; }
+    .shap-sel {
+      width: 100%;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; padding: 7px 9px;
+      color: var(--text); font-size: 11.5px; cursor: pointer; margin-bottom: 10px; outline: none;
+    }
+    .shap-sel:focus { border-color: var(--purple); }
+    .shap-stats {
+      display: flex; gap: 10px; margin-bottom: 10px;
+      padding: 9px 11px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; font-size: 10.5px;
+    }
+    .ss { display: flex; flex-direction: column; gap: 2px; }
+    .ss-l { color: var(--muted); }
+    .ss-v { font-weight: 700; font-size: 13px; }
+    .shap-ld {
+      display: flex; align-items: center; justify-content: center;
+      height: 180px; flex-direction: column; gap: 10px;
+    }
+    .shap-sp {
+      width: 30px; height: 30px;
+      border: 3px solid rgba(139,92,246,.2);
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    .shap-hint { font-size: 10.5px; color: var(--muted); text-align: center; max-width: 220px; line-height: 1.5; }
+
+    /* ── Trains ── */
+    .trn-section { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+    .trn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 11px; }
+    .trn-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 11px; padding: 13px;
+      cursor: pointer; transition: all .2s;
+      animation: fadeUp .4s ease both;
+      position: relative; overflow: hidden;
+    }
+    .trn-card:hover { border-color: var(--blue); transform: translateY(-1px); }
+    .trn-card.exp { border-color: var(--blue); }
+    .trn-glow { position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 11px 11px 0 0; }
+    .trn-hd { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 9px; }
+    .trn-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 3px;
+    }
+    .trn-name { font-size: 12px; font-weight: 700; color: var(--text); }
+    .trn-tbadge {
+      font-size: 9px; font-weight: 700; padding: 2px 6px;
+      border-radius: 7px; display: inline-block; margin-top: 2px;
+    }
+    .trn-dpill {
+      margin-left: auto;
+      padding: 3px 8px; border-radius: 9px;
+      font-size: 10.5px; font-weight: 700;
+    }
+    .db-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 9px; overflow: hidden; }
+    .db { height: 100%; border-radius: 2px; transition: width 1.1s ease; }
+    .trn-sts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; font-size: 10px; }
+    .trn-st { color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+    .trn-sv { color: var(--text); font-weight: 600; font-size: 11.5px; }
+    .stops-wrap { margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border); display: none; }
+    .trn-card.exp .stops-wrap { display: block; }
+    .tl { display: flex; flex-direction: column; position: relative; }
+    .tl::before {
+      content: ''; position: absolute; left: 8px; top: 10px; bottom: 10px;
+      width: 1px; background: var(--border);
+    }
+    .tl-item { display: flex; align-items: flex-start; gap: 9px; padding: 5px 0; }
+    .tl-dot {
+      width: 17px; height: 17px; border-radius: 50%;
+      background: var(--surface2); border: 2px solid var(--border);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 7px; font-weight: 700; z-index: 1;
+    }
+    .tl-name { font-size: 10.5px; font-weight: 600; color: var(--text); }
+    .tl-time { font-size: 10px; color: var(--muted); }
+    .tl-dtag {
+      margin-left: auto; font-size: 9.5px; font-weight: 700;
+      padding: 1px 5px; border-radius: 5px;
+    }
+
+    /* ── Bottlenecks ── */
+    .bn-section { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+    .bn-list { display: flex; flex-direction: column; gap: 7px; }
+    .bn-item {
+      display: flex; align-items: center; gap: 11px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 9px; padding: 11px 13px;
+      animation: fadeUp .4s ease both;
+    }
+    .bn-sev { font-size: 15px; flex-shrink: 0; }
+    .bn-name { flex: 1; font-size: 12px; font-weight: 500; }
+    .bn-bar-w { width: 70px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .bn-bar { height: 100%; border-radius: 2px; }
+    .bn-val { font-size: 15px; font-weight: 800; }
+    .bn-badge { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 7px; }
+
+    /* ── Recommendations ── */
+    .rec-section { padding: 18px 22px; }
+    .rec-list { display: flex; flex-direction: column; gap: 7px; }
+    .rec-item {
+      display: flex; align-items: flex-start; gap: 9px;
+      padding: 11px 13px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 9px; font-size: 11.5px; color: var(--text); line-height: 1.55;
+      animation: fadeUp .4s ease both;
+    }
+    .rec-n {
+      flex-shrink: 0; width: 20px; height: 20px;
+      background: rgba(249,115,22,.12); color: var(--accent);
+      border-radius: 5px; display: flex; align-items: center; justify-content: center;
+      font-size: 9.5px; font-weight: 800;
+    }
+
+    /* ── Result bar ── */
+    .res-bar {
+      padding: 12px 22px;
+      background: linear-gradient(135deg, rgba(59,130,246,.07), rgba(16,185,129,.04));
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .res-date { font-size: 14px; font-weight: 700; }
+    .res-sub  { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+    .solve-pill {
+      margin-left: auto; padding: 4px 11px; border-radius: 18px;
+      background: rgba(59,130,246,.12); color: var(--blue);
+      font-size: 10.5px; font-weight: 600; border: 1px solid rgba(59,130,246,.2);
+    }
+
+    /* ── Placeholder ── */
+    .ph {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 11px; padding: 40px; color: var(--muted); text-align: center;
+    }
+    .ph-ico { font-size: 52px; animation: float 3.5s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(249,115,22,.3)); }
+    .ph h2 { font-size: 17px; color: var(--text); font-weight: 700; }
+    .ph p  { font-size: 12px; max-width: 280px; line-height: 1.6; }
+
+    .hidden { display: none !important; }
+    .err-box {
+      background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25);
+      border-radius: 9px; padding: 13px; color: var(--red); font-size: 12.5px;
+      margin: 18px 22px;
+    }
+  </style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">🚂</div>
+  <div>
+    <h1>Railway AI — Live Control</h1>
+    <p>Animated schedule optimization &amp; explainable AI dashboard</p>
+  </div>
+  <div class="hd-actions">
+    <a href="/" class="classic-link">← Classic View</a>
+    <div class="status-badge" id="statusBadge">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusTxt">Ready</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <p class="sec-lbl">Configuration</p>
+
+    <div class="card">
+      <div class="card-title"><div class="ci" style="background:rgba(249,115,22,.12)">⚡</div>Delay Factor</div>
+      <div class="fg">
+        <label class="fl">Global delay multiplier (0.0 – 2.0)</label>
+        <div class="rr">
+          <input type="range" id="delayFactor" min="0" max="2" step="0.1" value="1.0" />
+          <div class="rv" id="delayVal">1.0×</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:4px;">
+          <span>No Delays</span><span>Normal</span><span>Severe</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="ci" style="background:rgba(59,130,246,.12)">🌦</div>Weather Scenario</div>
+      <div class="rg" id="scenarioGroup">
+        <label class="ro sel" data-val="1"><input type="radio" name="scenario" value="1" checked /><div class="rd"></div><div><div class="rl">Monsoon Season</div><div class="rs">July · heavy rain, ghat delays</div></div></label>
+        <label class="ro"     data-val="2"><input type="radio" name="scenario" value="2" /><div class="rd"></div><div><div class="rl">Winter Fog</div><div class="rs">January · visibility restrictions</div></div></label>
+        <label class="ro"     data-val="3"><input type="radio" name="scenario" value="3" /><div class="rd"></div><div><div class="rl">Summer Heat</div><div class="rs">April · track expansion risk</div></div></label>
+        <label class="ro"     data-val="4"><input type="radio" name="scenario" value="4" /><div class="rd"></div><div><div class="rl">Normal Season</div><div class="rs">October · baseline conditions</div></div></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="ci" style="background:rgba(16,185,129,.12)">🔧</div>Maintenance Preset</div>
+      <div class="rg" id="maintGroup">
+        <label class="ro"     data-val="0"><input type="radio" name="maintenance" value="0" /><div class="rd"></div><div><div class="rl">No Maintenance</div><div class="rs">All tracks operational</div></div></label>
+        <label class="ro"     data-val="1"><input type="radio" name="maintenance" value="1" /><div class="rd"></div><div><div class="rl">Light (Night)</div><div class="rs">Minor track inspection 1–5 AM</div></div></label>
+        <label class="ro"     data-val="2"><input type="radio" name="maintenance" value="2" /><div class="rd"></div><div><div class="rl">Track Renewal</div><div class="rs">Station A → Station J</div></div></label>
+        <label class="ro"     data-val="3"><input type="radio" name="maintenance" value="3" /><div class="rd"></div><div><div class="rl">Signaling Work</div><div class="rs">Junction X → Station G</div></div></label>
+        <label class="ro"     data-val="4"><input type="radio" name="maintenance" value="4" /><div class="rd"></div><div><div class="rl">Bottleneck (Lonavala)</div><div class="rs">Critical steep climb section</div></div></label>
+        <label class="ro sel" data-val="5"><input type="radio" name="maintenance" value="5" checked /><div class="rd"></div><div><div class="rl">Multiple Blocks</div><div class="rs">Heavy maintenance — default</div></div></label>
+        <label class="ro"     data-val="6"><input type="radio" name="maintenance" value="6" /><div class="rd"></div><div><div class="rl">Emergency Repair</div><div class="rs">Full day — main line blocked</div></div></label>
+      </div>
+    </div>
+
+    <button class="btn-p" id="runBtn" onclick="runOptimization()">
+      <div class="sp"></div><span id="runTxt">🚀 Run Optimization</span>
+    </button>
+
+    <button class="btn-s" id="shapBtn" onclick="runShap()" disabled>
+      <div class="sp"></div><span id="shapTxt">🧠 Run SHAP Analysis</span>
+    </button>
+
+    <p class="shap-hint-txt">SHAP trains a surrogate model across delay variations — takes ~30–60 s</p>
+  </aside>
+
+  <!-- ── Main Content ── -->
+  <main class="main" id="mainArea">
+
+    <!-- Network Map (always visible) -->
+    <div class="net-section">
+      <div class="sh">
+        📡 Live Network Monitor
+        <span class="cnt" id="netStatus">Demo mode — trains always running</span>
+      </div>
+      <div class="net-wrap">
+        <div class="net-scan"></div>
+        <svg id="networkSvg" viewBox="0 0 940 310" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="gBlue" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="gRed" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="gTrain" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="5" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <radialGradient id="bgG" cx="50%" cy="50%">
+              <stop offset="0%"   stop-color="#0c1825"/>
+              <stop offset="100%" stop-color="#060d17"/>
+            </radialGradient>
+            <!-- grid dots -->
+            <pattern id="grid" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="15" cy="15" r="0.7" fill="rgba(59,130,246,0.12)"/>
+            </pattern>
+          </defs>
+          <rect width="940" height="310" fill="url(#bgG)"/>
+          <rect width="940" height="310" fill="url(#grid)"/>
+          <g id="tracksLayer"></g>
+          <g id="stationsLayer"></g>
+          <g id="labelsLayer"></g>
+          <g id="trainsLayer"></g>
+        </svg>
+        <div class="net-legend">
+          <div class="lg-item"><div class="lg-line" style="background:#1e3a5f"></div>Double Track</div>
+          <div class="lg-item"><div class="lg-line" style="background:#ef4444"></div>Bottleneck / Single Track</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#00d4ff"></div>Superfast</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#34d399"></div>Express</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#c084fc"></div>Mail/Express</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#fb923c"></div>Passenger</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#94a3b8"></div>Freight/Goods</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#f59e0b;border-radius:3px"></div>Junction</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#3b82f6"></div>Major Station</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Placeholder (hidden after first run) -->
+    <div class="ph" id="placeholder">
+      <div class="ph-ico">🛤️</div>
+      <h2>Configure &amp; Run Optimization</h2>
+      <p>Select your weather scenario and maintenance preset on the left, then click <strong>Run Optimization</strong> to see live analytics and animated train paths.</p>
+    </div>
+
+    <!-- Results (hidden until run) -->
+    <div id="results" class="hidden">
+
+      <div class="res-bar" id="resBar"></div>
+
+      <!-- Metrics -->
+      <div class="mtr-section">
+        <div class="sh">📊 System Metrics</div>
+        <div class="mtr-grid" id="mtrGrid"></div>
+      </div>
+
+      <!-- Operational Insights + Maintenance -->
+      <div class="ins-section">
+        <div class="sh">🔍 Operational Insights</div>
+        <div class="ins-grid" id="insGrid"></div>
+      </div>
+
+      <!-- Bottlenecks -->
+      <div class="bn-section">
+        <div class="sh">🚧 Bottleneck Analysis <span class="cnt" id="bnCnt"></span></div>
+        <div class="bn-list" id="bnList"></div>
+      </div>
+
+      <!-- Trains -->
+      <div class="trn-section">
+        <div class="sh">🚃 Train Fleet <span class="cnt" id="trnCnt"></span></div>
+        <div class="trn-grid" id="trnGrid"></div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="rec-section">
+        <div class="sh">💡 Recommendations</div>
+        <div class="rec-list" id="recList"></div>
+      </div>
+
+    </div><!-- /#results -->
+
+    <!-- SHAP Section (appears after SHAP runs) -->
+    <div id="shapSection" class="shap-section hidden">
+      <div class="sh">
+        🧠 SHAP Explainability — Delay Driver Analysis
+        <span class="cnt" id="shapCnt"></span>
+      </div>
+      <div class="shap-grid">
+        <!-- Global importance -->
+        <div class="shap-card">
+          <div class="shap-ct">
+            📊 Global Feature Importance
+            <span style="margin-left:auto;font-size:9.5px;color:var(--muted)">Mean |SHAP|</span>
+          </div>
+          <div id="shapGlobalArea">
+            <div class="shap-ld" id="shapGlobLd">
+              <div class="shap-sp"></div>
+              <div class="shap-hint">Computing SHAP values across delay variations…</div>
+            </div>
+          </div>
+          <div class="chart-box hidden" id="shapGlobChart">
+            <canvas id="chartGlobal"></canvas>
+          </div>
+        </div>
+        <!-- Per-train breakdown -->
+        <div class="shap-card">
+          <div class="shap-ct">🎯 Per-Train SHAP Breakdown</div>
+          <div id="shapTrainArea">
+            <div class="shap-ld" id="shapTrnLd">
+              <div class="shap-sp"></div>
+              <div class="shap-hint">Training surrogate GradientBoosting model…</div>
+            </div>
+          </div>
+          <div class="hidden" id="shapTrnWrap">
+            <select class="shap-sel" id="shapTrnSel" onchange="updateTrnShap()"></select>
+            <div class="shap-stats" id="shapTrnStats"></div>
+            <div style="position:relative;height:240px">
+              <canvas id="chartTrain"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONSTANTS — network topology
+// ═══════════════════════════════════════════════════
+const SPOS = {
+  'Karjat_Hold_Point':   { x: 55,  y: 220, label: 'Karjat',    type: 'freight'  },
+  'Station_C':           { x: 158, y: 220, label: 'Station C', type: 'major'    },
+  'Station_J':           { x: 280, y: 220, label: 'Station J', type: 'normal'   },
+  'Station_A':           { x: 400, y: 220, label: 'Station A', type: 'major'    },
+  'Lonavala_Hold_Point': { x: 455, y: 138, label: 'Lonavala',  type: 'hold'     },
+  'Junction_Z':          { x: 548, y: 138, label: 'Junc. Z',   type: 'junction' },
+  'Station_B':           { x: 636, y: 62,  label: 'Station B', type: 'normal'   },
+  'Station_H':           { x: 636, y: 214, label: 'Station H', type: 'normal'   },
+  'H_Loop':              { x: 718, y: 268, label: 'H Loop',    type: 'loop'     },
+  'Junction_X':          { x: 722, y: 138, label: 'Junc. X',   type: 'junction' },
+  'Station_G':           { x: 815, y: 72,  label: 'Station G', type: 'normal'   },
+  'Station_D':           { x: 818, y: 205, label: 'Station D', type: 'normal'   },
+  'Junction_Y':          { x: 893, y: 265, label: 'Junc. Y',   type: 'junction' },
+};
+
+const TDEFS = [
+  { from:'Karjat_Hold_Point',   to:'Station_C',           bot:false, single:false },
+  { from:'Station_C',           to:'Station_J',           bot:false, single:false },
+  { from:'Station_J',           to:'Station_A',           bot:false, single:false },
+  { from:'Station_A',           to:'Lonavala_Hold_Point', bot:true,  single:true  },
+  { from:'Lonavala_Hold_Point', to:'Junction_Z',          bot:true,  single:true  },
+  { from:'Junction_Z',          to:'Station_B',           bot:false, single:false },
+  { from:'Junction_Z',          to:'Station_H',           bot:false, single:false },
+  { from:'Station_H',           to:'H_Loop',              bot:true,  single:true  },
+  { from:'Station_H',           to:'Junction_X',          bot:false, single:false },
+  { from:'Junction_X',          to:'Station_G',           bot:false, single:false },
+  { from:'Junction_X',          to:'Station_D',           bot:false, single:false },
+  { from:'Station_D',           to:'Junction_Y',          bot:false, single:false },
+];
+
+const TRAINS = {
+  '12301_Howrah_Rajdhani':   { color:'#00d4ff', type:'Superfast', sp:1.0,  route:['Station_C','Station_J','Station_A','Lonavala_Hold_Point','Junction_Z','Station_B'] },
+  '22301_Shatabdi_Express':  { color:'#60a5fa', type:'Superfast', sp:0.9,  route:['Station_C','Station_J','Station_A','Lonavala_Hold_Point','Junction_Z'] },
+  '11301_Udyan_Express':     { color:'#34d399', type:'Express',   sp:0.85, route:['Station_C','Station_J','Station_A','Lonavala_Hold_Point','Junction_Z','Station_H','Junction_X'] },
+  '17301_Mumbai_Mail':       { color:'#c084fc', type:'Mail',      sp:0.8,  route:['Station_B','Junction_Z','Lonavala_Hold_Point','Station_A','Station_J','Station_C'] },
+  '51301_Local_Passenger':   { color:'#fb923c', type:'Passenger', sp:0.6,  route:['Station_C','Station_J','Station_A','Lonavala_Hold_Point'] },
+  '59301_Mixed_Passenger':   { color:'#fbbf24', type:'Passenger', sp:0.55, route:['Junction_Z','Station_H','Junction_X','Station_G'] },
+  '56301_Container_Freight': { color:'#f87171', type:'Freight',   sp:0.45, route:['Karjat_Hold_Point','Station_C','Station_J','Station_A'] },
+  '52301_Coal_Goods':        { color:'#94a3b8', type:'Goods',     sp:0.35, route:['Karjat_Hold_Point','Station_C','Station_J'] },
+};
+
+const FEAT_LABELS = {
+  weather_delay:'Weather Delay', maintenance_delay:'Maintenance Delay',
+  congestion_delay:'Congestion Delay', operational_delay:'Operational Delay',
+  bottleneck_sections:'Bottleneck Sections', steep_grade_sections:'Steep Grade',
+  single_track_sections:'Single Track', train_priority:'Train Priority',
+  delay_factor:'Global Delay Factor',
+};
+const FEAT_COLORS = ['#f97316','#ef4444','#3b82f6','#8b5cf6','#f59e0b','#10b981','#06b6d4','#ec4899','#a3e635'];
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let animStates = {};
+let rafId = null;
+let globChart = null, trnChart = null;
+let shapData = null;
+
+// ═══════════════════════════════════════════════════
+// PARTICLE BACKGROUND
+// ═══════════════════════════════════════════════════
+(function() {
+  const cv = document.getElementById('bgCanvas');
+  const ctx = cv.getContext('2d');
+  const pts = [];
+  function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+  resize(); addEventListener('resize', resize);
+  for (let i = 0; i < 55; i++) pts.push({
+    x: Math.random()*innerWidth, y: Math.random()*innerHeight,
+    vx:(Math.random()-.5)*.25, vy:(Math.random()-.5)*.25,
+    r: Math.random()*1.4+.4, o: Math.random()*.35+.08,
+  });
+  function draw() {
+    ctx.clearRect(0,0,cv.width,cv.height);
+    pts.forEach(p => {
+      p.x+=p.vx; p.y+=p.vy;
+      if (p.x<0) p.x=cv.width; if (p.x>cv.width) p.x=0;
+      if (p.y<0) p.y=cv.height; if (p.y>cv.height) p.y=0;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(59,130,246,${p.o})`; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ═══════════════════════════════════════════════════
+// NETWORK MAP
+// ═══════════════════════════════════════════════════
+function initNetwork() {
+  const svg = document.getElementById('networkSvg');
+  const trkL = document.getElementById('tracksLayer');
+  const staL = document.getElementById('stationsLayer');
+  const lblL = document.getElementById('labelsLayer');
+
+  // ── Draw tracks ──
+  TDEFS.forEach(t => {
+    const s = SPOS[t.from], e = SPOS[t.to];
+    if (!s || !e) return;
+
+    // Shadow / glow under bottleneck lines
+    if (t.bot) {
+      const sh = makeSvg('line');
+      setA(sh, {x1:s.x, y1:s.y, x2:e.x, y2:e.y,
+        stroke:'rgba(239,68,68,0.18)', 'stroke-width':'10', 'stroke-linecap':'round'});
+      trkL.appendChild(sh);
+    }
+
+    // Main line
+    const ln = makeSvg('line');
+    setA(ln, {x1:s.x, y1:s.y, x2:e.x, y2:e.y,
+      stroke: t.bot ? '#ef4444' : '#1e3a5f',
+      'stroke-width': t.bot ? '2.5' : '2',
+      'stroke-linecap':'round',
+      'stroke-dasharray': t.single ? '7 4' : 'none'});
+    ln.dataset.track = t.from+'_'+t.to;
+    if (t.bot) ln.style.animation = 'trk-pulse 2.2s ease-in-out infinite';
+    trkL.appendChild(ln);
+
+    // Bottleneck mid-marker
+    if (t.bot) {
+      const mx=(s.x+e.x)/2, my=(s.y+e.y)/2;
+      const w = makeSvg('circle');
+      setA(w,{cx:mx,cy:my,r:'5.5',fill:'rgba(239,68,68,.9)',filter:'url(#gRed)'});
+      w.style.animation='trk-pulse 1.6s ease-in-out infinite';
+      trkL.appendChild(w);
+    }
+  });
+
+  // ── Draw stations ──
+  Object.entries(SPOS).forEach(([id, s]) => {
+    const isJ = s.type==='junction', isM = s.type==='major',
+          isH = s.type==='hold',   isL = s.type==='loop';
+    const r     = isJ?9 : isM?8 : isH?8 : isL?5 : 6;
+    const col   = isJ?'#f59e0b' : isM?'#3b82f6' : isH?'#ef4444' : isL?'#64748b' : '#64748b';
+    const flt   = (isJ||isM||isH)?'url(#gBlue)':'none';
+
+    // Pulse ring
+    const ring = makeSvg('circle');
+    setA(ring,{cx:s.x,cy:s.y,r:r+5,fill:'none',stroke:col,'stroke-width':'1',opacity:'.2'});
+    if (isJ||isM||isH) ring.style.animation=`trk-pulse ${1.4+Math.random()*.8}s ease-in-out infinite`;
+    staL.appendChild(ring);
+
+    // Body
+    const c = makeSvg('circle');
+    setA(c,{cx:s.x,cy:s.y,r,fill:'#0c1825',stroke:col,'stroke-width':'2'});
+    if (flt!=='none') c.setAttribute('filter',flt);
+    staL.appendChild(c);
+
+    // Inner fill
+    const d = makeSvg('circle');
+    setA(d,{cx:s.x,cy:s.y,r:r-3,fill:col,opacity:'.85'});
+    staL.appendChild(d);
+
+    // Label
+    const above = s.y < 180;
+    const lbl = makeSvg('text');
+    setA(lbl,{x:s.x,y:s.y+(above?-14:20),'text-anchor':'middle','font-size':'9','font-family':'system-ui','fill':'#94a3b8'});
+    lbl.textContent = s.label;
+    lblL.appendChild(lbl);
+  });
+
+  // ── Init train animation states ──
+  Object.entries(TRAINS).forEach(([id, def]) => {
+    animStates[id] = {
+      p: Math.random(), spd: def.sp * 0.00024,
+      color: def.color, route: def.route,
+      el: null, glEl: null,
+    };
+  });
+  buildTrainElements();
+  startAnim();
+}
+
+function makeSvg(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+function setA(el, attrs) { Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, v)); }
+
+function buildTrainElements() {
+  const layer = document.getElementById('trainsLayer');
+  layer.innerHTML = '';
+  Object.entries(animStates).forEach(([id, st]) => {
+    const pos = routePos(st.route, st.p);
+    if (!pos) return;
+    // Glow halo
+    const gl = makeSvg('circle');
+    setA(gl,{cx:pos.x,cy:pos.y,r:'9',fill:st.color,opacity:'.22',filter:'url(#gTrain)'});
+    layer.appendChild(gl); st.glEl = gl;
+    // Train dot
+    const dot = makeSvg('circle');
+    setA(dot,{cx:pos.x,cy:pos.y,r:'5',fill:st.color,filter:'url(#gBlue)'});
+    layer.appendChild(dot); st.el = dot;
+  });
+}
+
+function routePos(route, p) {
+  const pts = route.map(s => SPOS[s]).filter(Boolean);
+  if (pts.length < 2) return pts[0] || null;
+  const total = pts.length - 1;
+  const seg   = p * total;
+  const idx   = Math.min(Math.floor(seg), total-1);
+  const f     = seg - idx;
+  const a = pts[idx], b = pts[idx+1];
+  return { x: a.x + (b.x-a.x)*f, y: a.y + (b.y-a.y)*f };
+}
+
+function startAnim() {
+  if (rafId) cancelAnimationFrame(rafId);
+  function tick() {
+    Object.values(animStates).forEach(st => {
+      st.p = (st.p + st.spd) % 1;
+      const pos = routePos(st.route, st.p);
+      if (!pos || !st.el) return;
+      st.el.setAttribute('cx', pos.x);  st.el.setAttribute('cy', pos.y);
+      st.glEl.setAttribute('cx', pos.x); st.glEl.setAttribute('cy', pos.y);
+    });
+    rafId = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+// ═══════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════
+function initControls() {
+  const sl = document.getElementById('delayFactor');
+  const vl = document.getElementById('delayVal');
+  sl.addEventListener('input', () => {
+    vl.textContent = parseFloat(sl.value).toFixed(1)+'×';
+    const pct = (sl.value/2)*100;
+    sl.style.background=`linear-gradient(90deg,#f97316 ${pct}%,#1a2d45 ${pct}%)`;
+  });
+  sl.dispatchEvent(new Event('input'));
+
+  ['scenarioGroup','maintGroup'].forEach(gid => {
+    document.getElementById(gid).querySelectorAll('.ro').forEach(o => {
+      o.addEventListener('click', () => {
+        o.closest('.rg').querySelectorAll('.ro').forEach(x => x.classList.remove('sel'));
+        o.classList.add('sel');
+        o.querySelector('input[type=radio]').checked = true;
+      });
+    });
+  });
+}
+
+function radioVal(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? parseInt(el.value) : 1;
+}
+function csrf() {
+  const v = document.cookie.match('(^|;) ?csrftoken=([^;]*)(;|$)');
+  return v ? v[2] : '';
+}
+function setStatus(txt, color, bg, border) {
+  const b = document.getElementById('statusBadge');
+  const d = document.getElementById('statusDot');
+  document.getElementById('statusTxt').textContent = txt;
+  b.style.color = color; b.style.background = bg; b.style.borderColor = border;
+  d.style.background = color; d.style.boxShadow = `0 0 8px ${color}`;
+}
+
+// Counter animation
+function countUp(el, target, dec=0, suffix='') {
+  const dur=1300, t0=performance.now();
+  function step(now) {
+    const t=Math.min((now-t0)/dur,1), ease=1-Math.pow(1-t,3);
+    el.textContent = (target*ease).toFixed(dec)+suffix;
+    if (t<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ═══════════════════════════════════════════════════
+// OPTIMIZATION API
+// ═══════════════════════════════════════════════════
+async function runOptimization() {
+  const btn = document.getElementById('runBtn');
+  const txt = document.getElementById('runTxt');
+  btn.classList.add('ld'); btn.disabled = true;
+  txt.textContent = ' Optimizing...';
+  setStatus('Running…','#f59e0b','rgba(245,158,11,.1)','rgba(245,158,11,.25)');
+
+  const payload = {
+    delay_factor: parseFloat(document.getElementById('delayFactor').value),
+    scenario: radioVal('scenario'),
+    maintenance_preset: radioVal('maintenance'),
+  };
+
+  try {
+    const res  = await fetch('/api/optimize/', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    document.getElementById('placeholder').classList.add('hidden');
+    document.getElementById('results').classList.remove('hidden');
+
+    if (data.error) { renderError(data.error); }
+    else {
+      renderResults(data);
+      updateAnimSpeeds(data.trains);
+      document.getElementById('shapBtn').disabled = false;
+      document.getElementById('netStatus').textContent =
+        `${data.metrics.total_trains} trains · ${data.scenario.date} · ${data.scenario.season}`;
+    }
+    setStatus('● Live','#10b981','rgba(16,185,129,.1)','rgba(16,185,129,.25)');
+  } catch(e) {
+    document.getElementById('results').innerHTML =
+      `<div class="err-box">⚠ ${e.message}</div>`;
+    setStatus('Error','#ef4444','rgba(239,68,68,.1)','rgba(239,68,68,.25)');
+  } finally {
+    btn.classList.remove('ld'); btn.disabled=false;
+    txt.textContent='🚀 Run Optimization';
+  }
+}
+
+function updateAnimSpeeds(trains) {
+  trains.forEach(train => {
+    if (!animStates[train.id]) return;
+    const def = TRAINS[train.id];
+    const pen = Math.min(train.total_delay/60, 0.4);
+    animStates[train.id].spd = (def?def.sp:0.5)*0.00024*(1-pen);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER RESULTS
+// ═══════════════════════════════════════════════════
+function renderError(msg) {
+  document.getElementById('results').innerHTML =
+    `<div class="err-box">⚠ ${msg}</div>`;
+}
+
+function renderResults(d) {
+  // Result bar
+  document.getElementById('resBar').innerHTML = `
+    <div>
+      <div class="res-date">${d.scenario.date} — ${d.scenario.season} Season</div>
+      <div class="res-sub">Delay factor <strong>${d.scenario.delay_factor}×</strong> &nbsp;·&nbsp; Status: <strong>${d.status}</strong></div>
+    </div>
+    <div class="solve-pill">⏱ Solved in ${d.solve_time}s</div>`;
+
+  // Metrics
+  const pc = d.metrics.punctuality;
+  const pCol = pc>=75?'var(--green)':pc>=50?'var(--yellow)':'var(--red)';
+  document.getElementById('mtrGrid').innerHTML = `
+    <div class="mtr-card" style="animation-delay:0s">
+      <div class="mtr-top" style="background:linear-gradient(90deg,#f97316,#dc2626)"></div>
+      <div class="mtr-lbl">Total Delay</div>
+      <div class="mtr-val" style="color:#f97316" id="mv-tot">0</div>
+      <div class="mtr-sub">minutes system-wide</div>
+      <div class="mtr-ico">⏱</div>
+    </div>
+    <div class="mtr-card" style="animation-delay:.08s">
+      <div class="mtr-top" style="background:linear-gradient(90deg,#3b82f6,#6366f1)"></div>
+      <div class="mtr-lbl">Avg Delay / Train</div>
+      <div class="mtr-val" style="color:#3b82f6" id="mv-avg">0</div>
+      <div class="mtr-sub">minutes per train</div>
+      <div class="mtr-ico">🚆</div>
+    </div>
+    <div class="mtr-card" style="animation-delay:.16s">
+      <div class="mtr-top" style="background:linear-gradient(90deg,${pCol},${pCol})"></div>
+      <div class="mtr-lbl">Punctuality</div>
+      <div class="mtr-val" style="color:${pCol}" id="mv-pnc">0</div>
+      <div class="mtr-sub">${d.metrics.on_time_trains}/${d.metrics.total_trains} on time</div>
+      <div class="mtr-ico">✅</div>
+    </div>
+    <div class="mtr-card" style="animation-delay:.24s">
+      <div class="mtr-top" style="background:linear-gradient(90deg,#8b5cf6,#7c3aed)"></div>
+      <div class="mtr-lbl">Bottleneck Sections</div>
+      <div class="mtr-val" style="color:#8b5cf6" id="mv-bn">0</div>
+      <div class="mtr-sub">${d.insights.critical_bottlenecks} critical</div>
+      <div class="mtr-ico">⚠</div>
+    </div>`;
+
+  setTimeout(() => {
+    countUp(document.getElementById('mv-tot'), d.metrics.total_delay,  0, ' min');
+    countUp(document.getElementById('mv-avg'), d.metrics.avg_delay,    1, ' min');
+    countUp(document.getElementById('mv-pnc'), d.metrics.punctuality,  1, '%');
+    countUp(document.getElementById('mv-bn'),  d.insights.bottlenecks, 0);
+  }, 150);
+
+  // Insights + Maintenance
+  let mbHtml = d.maintenance?.blocks?.length
+    ? `<div class="mb-list">${d.maintenance.blocks.map(b=>`
+        <div class="mb-item">
+          <span class="mb-name">${b.section}</span>
+          <span class="mb-time">${b.start}–${b.end}</span>
+          <span class="mb-badge">${b.type}</span>
+          <span class="mb-delay">+${b.delay_minutes}m</span>
+        </div>`).join('')}</div>`
+    : '<div style="font-size:11px;color:var(--green)">✓ All tracks fully operational</div>';
+
+  document.getElementById('insGrid').innerHTML = `
+    <div class="ins-card">
+      <div class="sh" style="font-size:10.5px;padding-bottom:7px;margin-bottom:8px">Operational Summary</div>
+      <div class="ins-rows">
+        <div class="ins-row"><span class="ins-key">Weather Impact</span><span class="ins-val">${d.insights.weather_impact}</span></div>
+        <div class="ins-row"><span class="ins-key">Maintenance Impact</span><span class="ins-val">${d.insights.maintenance_impact}</span></div>
+        <div class="ins-row"><span class="ins-key">Premium Trains</span><span class="ins-val">${d.insights.premium_performance}</span></div>
+        <div class="ins-row"><span class="ins-key">Max Bottleneck Delay</span><span class="ins-val" style="color:var(--accent)">${d.insights.max_bottleneck_delay} min</span></div>
+      </div>
+    </div>
+    <div class="ins-card">
+      <div class="sh" style="font-size:10.5px;padding-bottom:7px;margin-bottom:6px">Maintenance — ${d.maintenance?.name||'N/A'}</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px">${d.maintenance?.description||''}</div>
+      ${mbHtml}
+    </div>`;
+
+  // Bottlenecks
+  document.getElementById('bnCnt').textContent = `${d.bottlenecks.length} sections`;
+  const maxDly = d.bottlenecks[0]?.delay || 1;
+  const sevC = {critical:'#ef4444',high:'#f97316',moderate:'#f59e0b',low:'#10b981'};
+  const sevI = {critical:'🔴',high:'🟠',moderate:'🟡',low:'🟢'};
+  document.getElementById('bnList').innerHTML = d.bottlenecks.length
+    ? d.bottlenecks.map((b,i)=>{
+        const c=sevC[b.severity]||'#64748b';
+        const bw=Math.round((b.delay/maxDly)*100);
+        return `<div class="bn-item" style="animation-delay:${i*.07}s;border-left:3px solid ${c}">
+          <span class="bn-sev">${sevI[b.severity]||'⚪'}</span>
+          <span class="bn-name">${b.section}</span>
+          <div class="bn-bar-w"><div class="bn-bar" style="width:${bw}%;background:${c}"></div></div>
+          <span class="bn-val" style="color:${c}">${b.delay}</span>
+          <span style="font-size:9.5px;color:var(--muted)">min</span>
+          <span class="bn-badge" style="background:${c}22;color:${c}">${b.severity.toUpperCase()}</span>
+        </div>`;}).join('')
+    : '<div style="font-size:11.5px;color:var(--green);padding:8px 0">✓ No significant bottleneck delays</div>';
+
+  // Trains
+  document.getElementById('trnCnt').textContent = `${d.trains.length} trains`;
+  const typeStyle = {
+    superfast:    {bg:'rgba(0,212,255,.12)',  tc:'#00d4ff'},
+    express:      {bg:'rgba(52,211,153,.12)', tc:'#34d399'},
+    mail_express: {bg:'rgba(192,132,252,.12)',tc:'#c084fc'},
+    passenger:    {bg:'rgba(251,146,60,.12)', tc:'#fb923c'},
+    freight:      {bg:'rgba(248,113,113,.12)',tc:'#f87171'},
+    goods:        {bg:'rgba(148,163,184,.12)',tc:'#94a3b8'},
+  };
+  const dlyC = {on_time:'#10b981',minor:'#f59e0b',delayed:'#f97316',late:'#ef4444'};
+  const dlyL = {on_time:'✓ On Time',minor:'~ Minor',delayed:'⚠ Delayed',late:'✗ Late'};
+
+  document.getElementById('trnGrid').innerHTML = d.trains.map((tr,i)=>{
+    const def = TRAINS[tr.id];
+    const col = def?.color||'#64748b';
+    const ts  = typeStyle[tr.type]||{bg:'rgba(100,116,139,.12)',tc:'#64748b'};
+    const dc  = dlyC[tr.status]||'#64748b';
+    const bw  = Math.min(Math.round((tr.total_delay/30)*100),100);
+
+    const stops = tr.stops.map((s,j)=>{
+      const sc = s.total_delay>15?'#ef4444':s.total_delay>5?'#f97316':s.total_delay>0?'#f59e0b':'#10b981';
+      const isEnd = j===0||j===tr.stops.length-1;
+      return `<div class="tl-item">
+        <div class="tl-dot" style="border-color:${isEnd?col:'#1a2d45'};background:${isEnd?col+'33':'var(--surface2)'}">${j+1}</div>
+        <div>
+          <div class="tl-name">${s.station}</div>
+          <div class="tl-time">${s.arrival} → ${s.departure}</div>
+        </div>
+        ${s.total_delay>0?`<span class="tl-dtag" style="background:${sc}22;color:${sc}">+${s.total_delay}m</span>`:''}
+      </div>`;
+    }).join('');
+
+    return `<div class="trn-card" id="tc-${tr.id}" onclick="toggleTrn('${tr.id}')" style="animation-delay:${i*.055}s">
+      <div class="trn-glow" style="background:${col}"></div>
+      <div class="trn-hd">
+        <div class="trn-dot" style="background:${col};box-shadow:0 0 9px ${col}80"></div>
+        <div>
+          <div class="trn-name">${tr.name}</div>
+          <span class="trn-tbadge" style="background:${ts.bg};color:${ts.tc}">${tr.type.toUpperCase()}</span>
+        </div>
+        <div class="trn-dpill" style="background:${dc}22;color:${dc}">${dlyL[tr.status]||'?'}</div>
+      </div>
+      <div class="db-wrap"><div class="db" style="width:${bw}%;background:${dc}"></div></div>
+      <div class="trn-sts">
+        <div class="trn-st"><span class="trn-sv" style="color:${dc}">${tr.total_delay}m</span><span>Total Delay</span></div>
+        <div class="trn-st"><span class="trn-sv">${tr.priority}</span><span>Priority</span></div>
+        <div class="trn-st"><span class="trn-sv">${tr.stops.length}</span><span>Stops</span></div>
+      </div>
+      <div class="stops-wrap"><div class="tl">${stops}</div></div>
+    </div>`;
+  }).join('');
+
+  // Recommendations
+  document.getElementById('recList').innerHTML = d.recommendations.length
+    ? d.recommendations.map((r,i)=>`
+        <div class="rec-item" style="animation-delay:${i*.065}s">
+          <div class="rec-n">${i+1}</div><div>${r}</div>
+        </div>`).join('')
+    : '<div style="font-size:11.5px;color:var(--muted)">No recommendations generated.</div>';
+}
+
+function toggleTrn(id) {
+  document.getElementById('tc-'+id)?.classList.toggle('exp');
+}
+
+// ═══════════════════════════════════════════════════
+// SHAP API
+// ═══════════════════════════════════════════════════
+async function runShap() {
+  const btn = document.getElementById('shapBtn');
+  const txt = document.getElementById('shapTxt');
+  btn.classList.add('ld'); btn.disabled=true;
+  txt.textContent=' Analysing…';
+
+  const sec = document.getElementById('shapSection');
+  sec.classList.remove('hidden');
+  document.getElementById('shapCnt').textContent = 'Computing…';
+  document.getElementById('shapGlobLd').style.display='flex';
+  document.getElementById('shapGlobChart').classList.add('hidden');
+  document.getElementById('shapTrnLd').style.display='flex';
+  document.getElementById('shapTrnWrap').classList.add('hidden');
+
+  sec.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  const payload = {
+    delay_factor: parseFloat(document.getElementById('delayFactor').value),
+    scenario: radioVal('scenario'),
+    maintenance_preset: radioVal('maintenance'),
+  };
+
+  try {
+    const res  = await fetch('/api/shap/', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById('shapCnt').textContent = 'Error: '+data.error;
+    } else {
+      shapData = data;
+      renderShap(data);
+      document.getElementById('shapCnt').textContent =
+        `${data.feature_names.length} features · ${Object.keys(data.train_shap).length} trains`;
+    }
+  } catch(e) {
+    document.getElementById('shapCnt').textContent = 'Failed: '+e.message;
+  } finally {
+    btn.classList.remove('ld'); btn.disabled=false;
+    txt.textContent='🧠 Re-run SHAP';
+  }
+}
+
+function renderShap(data) {
+  document.getElementById('shapGlobLd').style.display='none';
+  document.getElementById('shapTrnLd').style.display='none';
+  document.getElementById('shapGlobChart').classList.remove('hidden');
+  document.getElementById('shapTrnWrap').classList.remove('hidden');
+
+  // Global importance chart
+  const sorted = Object.entries(data.global_importance).sort((a,b)=>b[1]-a[1]);
+  const labels = sorted.map(([f])=>FEAT_LABELS[f]||f);
+  const values = sorted.map(([,v])=>+v.toFixed(3));
+  const colors = sorted.map((_,i)=>FEAT_COLORS[i%FEAT_COLORS.length]);
+
+  if (globChart) globChart.destroy();
+  globChart = new Chart(document.getElementById('chartGlobal').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        data:values,
+        backgroundColor:colors.map(c=>c+'bb'),
+        borderColor:colors,
+        borderWidth:1.5,
+        borderRadius:4,
+        borderSkipped:false,
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true, maintainAspectRatio:false,
+      animation:{duration:1100,easing:'easeOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#0c1825',borderColor:'#1a2d45',borderWidth:1,
+          titleColor:'#e2e8f0',bodyColor:'#94a3b8',
+          callbacks:{label:ctx=>` ${ctx.raw.toFixed(3)} min (mean |SHAP|)`}
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#64748b',font:{size:10}},
+           title:{display:true,text:'Mean |SHAP| (minutes)',color:'#64748b',font:{size:10}}},
+        y:{grid:{display:false},ticks:{color:'#e2e8f0',font:{size:10}}},
+      }
+    }
+  });
+
+  // Train selector
+  const sel = document.getElementById('shapTrnSel');
+  sel.innerHTML = Object.keys(data.train_shap).map(id=>{
+    const def = TRAINS[id];
+    return `<option value="${id}">${id.replace(/_/g,' ')}${def?' ('+def.type+')':''}</option>`;
+  }).join('');
+  updateTrnShap();
+}
+
+function updateTrnShap() {
+  if (!shapData) return;
+  const id    = document.getElementById('shapTrnSel').value;
+  const entry = shapData.train_shap[id];
+  if (!entry) return;
+
+  document.getElementById('shapTrnStats').innerHTML = `
+    <div class="ss"><span class="ss-l">Baseline</span><span class="ss-v" style="color:#64748b">${shapData.expected_value.toFixed(1)} min</span></div>
+    <div class="ss"><span class="ss-l">Predicted</span><span class="ss-v" style="color:#3b82f6">${entry.predicted_delay.toFixed(1)} min</span></div>
+    <div class="ss"><span class="ss-l">Actual</span><span class="ss-v" style="color:#f97316">${entry.actual_delay} min</span></div>`;
+
+  const contribs = shapData.feature_names
+    .map((f,i)=>({label:FEAT_LABELS[f]||f, val:entry.shap_values[i]}))
+    .filter(c=>Math.abs(c.val)>=0.01)
+    .sort((a,b)=>Math.abs(b.val)-Math.abs(a.val))
+    .slice(0,8);
+
+  if (trnChart) trnChart.destroy();
+  trnChart = new Chart(document.getElementById('chartTrain').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:contribs.map(c=>c.label),
+      datasets:[{
+        label:'SHAP Contribution',
+        data:contribs.map(c=>+c.val.toFixed(3)),
+        backgroundColor:contribs.map(c=>c.val>0?'rgba(239,68,68,.72)':'rgba(16,185,129,.72)'),
+        borderColor:contribs.map(c=>c.val>0?'#ef4444':'#10b981'),
+        borderWidth:1.5, borderRadius:3, borderSkipped:false,
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true, maintainAspectRatio:false,
+      animation:{duration:900,easing:'easeOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#0c1825',borderColor:'#1a2d45',borderWidth:1,
+          titleColor:'#e2e8f0',bodyColor:'#94a3b8',
+          callbacks:{label:ctx=>{
+            const v=ctx.raw;
+            return ` ${v>0?'+':''}${v.toFixed(3)} min (${v>0?'adds':'reduces'} delay)`;
+          }}
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#64748b',font:{size:10}},
+           title:{display:true,text:'SHAP Value (min)',color:'#64748b',font:{size:10}}},
+        y:{grid:{display:false},ticks:{color:'#e2e8f0',font:{size:10}}},
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initControls();
+  initNetwork();
+});
+</script>
+</body>
+</html>

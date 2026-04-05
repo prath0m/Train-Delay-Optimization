@@ -18,6 +18,10 @@ def index(request):
     return render(request, 'index.html')
 
 
+def dashboard(request):
+    return render(request, 'dashboard.html')
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def run_optimization(request):
@@ -165,6 +169,52 @@ def run_optimization(request):
         }
 
         return JsonResponse(result)
+
+    except Exception as e:
+        import traceback
+        return JsonResponse({'error': str(e), 'traceback': traceback.format_exc()}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def run_shap(request):
+    try:
+        data = json.loads(request.body)
+
+        delay_factor = float(data.get('delay_factor', 1.0))
+        delay_factor = max(0.0, min(delay_factor, 2.0))
+
+        scenario_choice = int(data.get('scenario', 1))
+        maintenance_preset = int(data.get('maintenance_preset', 5))
+        maintenance_preset = max(0, min(maintenance_preset, 6))
+
+        scenarios = {
+            1: datetime(2024, 7, 15),
+            2: datetime(2024, 1, 15),
+            3: datetime(2024, 4, 15),
+            4: datetime(2024, 10, 15),
+        }
+        scenario_date = scenarios.get(scenario_choice, scenarios[1])
+
+        from optimizer import EnhancedIndianRailwayOptimizer
+        from shap_explainer import run_shap_analysis
+
+        optimizer = EnhancedIndianRailwayOptimizer(
+            scenario_date=scenario_date,
+            custom_delay_factor=delay_factor,
+            maintenance_preset=maintenance_preset,
+        )
+        solution = optimizer.solve_optimization()
+
+        if solution.get('error'):
+            return JsonResponse({'error': solution['error']}, status=500)
+
+        shap_results = run_shap_analysis(optimizer, solution)
+
+        if shap_results.get('error'):
+            return JsonResponse({'error': shap_results['error']}, status=500)
+
+        return JsonResponse(shap_results)
 
     except Exception as e:
         import traceback

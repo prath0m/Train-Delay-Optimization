@@ -1,38 +1,1065 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World Template</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .container {
-            text-align: center;
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-        
-        h1 {
-            color: #333;
-            margin: 0;
-            font-size: 48px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Indian Railway Delay Optimizer</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2330;
+      --border: #30363d;
+      --accent: #f97316;
+      --accent2: #fb923c;
+      --blue: #3b82f6;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,.5);
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1f2e 0%, #0f1623 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), #dc2626);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    header p  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .status-badge {
+      margin-left: auto;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(34,197,94,.1);
+      color: var(--green);
+      border: 1px solid rgba(34,197,94,.2);
+    }
+
+    /* ── Layout ── */
+    .app {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 0;
+      height: calc(100vh - 81px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon {
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+    }
+    .icon-orange { background: rgba(249,115,22,.15); }
+    .icon-blue   { background: rgba(59,130,246,.15); }
+    .icon-green  { background: rgba(34,197,94,.15); }
+    .icon-purple { background: rgba(168,85,247,.15); }
+
+    /* ── Form Controls ── */
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group:last-child { margin-bottom: 0; }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(249,115,22,.2);
+    }
+    .range-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .range-value {
+      font-size: 15px; font-weight: 700;
+      color: var(--accent);
+      min-width: 36px;
+      text-align: right;
+    }
+
+    .radio-group { display: flex; flex-direction: column; gap: 6px; }
+    .radio-option {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .15s;
+      position: relative;
+    }
+    .radio-option:hover { border-color: var(--accent); background: rgba(249,115,22,.05); }
+    .radio-option input[type=radio] { display: none; }
+    .radio-option.selected {
+      border-color: var(--accent);
+      background: rgba(249,115,22,.08);
+    }
+    .radio-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      transition: all .15s;
+    }
+    .radio-option.selected .radio-dot {
+      border-color: var(--accent);
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(249,115,22,.2);
+    }
+    .radio-label { font-size: 12.5px; color: var(--text); }
+    .radio-sub { font-size: 11px; color: var(--muted); }
+
+    /* ── Run Button ── */
+    .run-btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--accent), #dc2626);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(249,115,22,.3);
+    }
+    .run-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(249,115,22,.4);
+    }
+    .run-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    .run-btn.loading .spinner { display: block; }
+    .run-btn.loading .btn-text::before { content: 'Running...'; }
+    .run-btn:not(.loading) .btn-text::before { content: 'Run Optimization'; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Main Content ── */
+    .main {
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Placeholder ── */
+    .placeholder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--muted);
+    }
+    .placeholder-icon {
+      width: 80px; height: 80px;
+      background: var(--surface2);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+      border: 1px solid var(--border);
+    }
+    .placeholder h2 { font-size: 18px; color: var(--text); }
+    .placeholder p  { font-size: 13px; text-align: center; max-width: 320px; }
+
+    /* ── Metrics Grid ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .metric-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .metric-card.orange::before { background: linear-gradient(90deg, var(--accent), #dc2626); }
+    .metric-card.blue::before   { background: linear-gradient(90deg, var(--blue), #6366f1); }
+    .metric-card.green::before  { background: linear-gradient(90deg, var(--green), #16a34a); }
+    .metric-card.purple::before { background: linear-gradient(90deg, var(--purple), #7c3aed); }
+
+    .metric-label  { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+    .metric-value  { font-size: 28px; font-weight: 800; line-height: 1; }
+    .metric-sub    { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .metric-card.orange .metric-value { color: var(--accent); }
+    .metric-card.blue   .metric-value { color: var(--blue); }
+    .metric-card.green  .metric-value { color: var(--green); }
+    .metric-card.purple .metric-value { color: var(--purple); }
+
+    /* ── Section Headers ── */
+    .section-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-header span { color: var(--muted); font-weight: 400; font-size: 12px; }
+
+    /* ── Insights Row ── */
+    .insights-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .insight-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .insight-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .insight-value { font-size: 13px; color: var(--text); font-weight: 500; }
+
+    /* ── Train Table ── */
+    .train-table {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: var(--surface);
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--muted);
+      text-align: left;
+    }
+    tbody tr {
+      border-top: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .12s;
+    }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    tbody tr.expanded { background: rgba(249,115,22,.04); }
+    td {
+      padding: 11px 14px;
+      font-size: 13px;
+    }
+    .train-name { font-weight: 600; color: var(--text); }
+    .train-type { font-size: 11px; color: var(--muted); }
+
+    .badge {
+      display: inline-flex;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-superfast { background: rgba(249,115,22,.15); color: var(--accent); }
+    .badge-express   { background: rgba(59,130,246,.15); color: var(--blue); }
+    .badge-mail      { background: rgba(168,85,247,.15); color: var(--purple); }
+    .badge-passenger { background: rgba(34,197,94,.15);  color: var(--green); }
+    .badge-freight   { background: rgba(234,179,8,.15);  color: var(--yellow); }
+    .badge-goods     { background: rgba(239,68,68,.15);  color: var(--red); }
+
+    .delay-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .delay-on-time  { background: rgba(34,197,94,.12); color: var(--green); }
+    .delay-minor    { background: rgba(234,179,8,.12); color: var(--yellow); }
+    .delay-delayed  { background: rgba(249,115,22,.12); color: var(--accent); }
+    .delay-late     { background: rgba(239,68,68,.12); color: var(--red); }
+
+    /* ── Expand Row ── */
+    .expand-row td {
+      padding: 0;
+      background: rgba(249,115,22,.03);
+    }
+    .expand-content {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(249,115,22,.15);
+    }
+    .stops-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+    }
+    .stop-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .stop-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .stop-times { font-size: 11px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+    .stop-delay {
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    /* ── Bottlenecks ── */
+    .bottleneck-list { display: flex; flex-direction: column; gap: 8px; }
+    .bottleneck-item {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .bottleneck-sev {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .sev-critical { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    .sev-high     { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .sev-moderate { background: var(--yellow); }
+    .sev-low      { background: var(--green); }
+    .bottleneck-section { flex: 1; font-size: 13px; color: var(--text); }
+    .bottleneck-delay   { font-size: 13px; font-weight: 700; }
+    .bottleneck-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 8px;
+      text-transform: uppercase;
+    }
+
+    /* ── Recommendations ── */
+    .rec-list { display: flex; flex-direction: column; gap: 8px; }
+    .rec-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12.5px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .rec-icon {
+      flex-shrink: 0;
+      width: 20px; height: 20px;
+      background: rgba(249,115,22,.12);
+      color: var(--accent);
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      margin-top: 1px;
+    }
+
+    /* ── Maintenance Block ── */
+    .maint-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .maint-name { font-size: 13px; font-weight: 600; }
+    .maint-desc { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .maint-blocks { display: flex; flex-direction: column; gap: 6px; }
+    .maint-block-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 12px;
+    }
+    .maint-section { flex: 1; font-weight: 500; }
+    .maint-time { color: var(--muted); }
+    .maint-type-badge {
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      background: rgba(234,179,8,.12);
+      color: var(--yellow);
+    }
+
+    /* ── Interactions ── */
+    .interaction-list { display: flex; flex-direction: column; gap: 8px; }
+    .interaction-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .interaction-header { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .interaction-body { font-size: 12.5px; color: var(--text); line-height: 1.5; }
+
+    /* ── Error ── */
+    .error-box {
+      background: rgba(239,68,68,.08);
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: 10px;
+      padding: 16px;
+      color: var(--red);
+      font-size: 13px;
+    }
+
+    /* ── Scenario badge ── */
+    .result-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .result-header-title { font-size: 14px; font-weight: 700; }
+    .result-header-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .solve-pill {
+      margin-left: auto;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: rgba(59,130,246,.12);
+      color: var(--blue);
+      font-weight: 600;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+    /* ── hidden ── */
+    .hidden { display: none !important; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Hello World</h1>
+
+<header>
+  <div class="logo">🚂</div>
+  <div>
+    <h1>Indian Railway Delay Optimizer</h1>
+    <p>Enhanced scheduling with weather, maintenance &amp; priority constraints</p>
+  </div>
+  <div class="status-badge" id="statusBadge">Ready</div>
+</header>
+
+<div class="app">
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar">
+    <div>
+      <p class="sidebar-title">Configuration</p>
     </div>
+
+    <!-- Delay Factor -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-orange">⚡</div>
+        Delay Factor
+      </div>
+      <div class="form-group">
+        <label>Global delay multiplier (0.0 = ideal, 2.0 = severe)</label>
+        <div class="range-row">
+          <input type="range" id="delayFactor" min="0" max="2" step="0.1" value="1.0" />
+          <div class="range-value" id="delayValue">1.0×</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;">
+          <span>No Delays</span><span>Normal</span><span>Severe</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scenario -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-blue">🌦</div>
+        Weather Scenario
+      </div>
+      <div class="radio-group" id="scenarioGroup">
+        <label class="radio-option selected" data-value="1">
+          <input type="radio" name="scenario" value="1" checked />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Monsoon Season</div>
+            <div class="radio-sub">July — Heavy rain, ghat delays</div>
+          </div>
+        </label>
+        <label class="radio-option" data-value="2">
+          <input type="radio" name="scenario" value="2" />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Winter Fog</div>
+            <div class="radio-sub">January — Visibility restrictions</div>
+          </div>
+        </label>
+        <label class="radio-option" data-value="3">
+          <input type="radio" name="scenario" value="3" />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Summer Heat</div>
+            <div class="radio-sub">April — Track expansion risk</div>
+          </div>
+        </label>
+        <label class="radio-option" data-value="4">
+          <input type="radio" name="scenario" value="4" />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Normal Season</div>
+            <div class="radio-sub">October — Baseline conditions</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Maintenance -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-green">🔧</div>
+        Maintenance Preset
+      </div>
+      <div class="radio-group" id="maintGroup">
+        <label class="radio-option" data-value="0">
+          <input type="radio" name="maintenance" value="0" />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">No Maintenance</div>
+            <div class="radio-sub">All tracks operational</div>
+          </div>
+        </label>
+        <label class="radio-option" data-value="1">
+          <input type="radio" name="maintenance" value="1" />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Light (Night)</div>
+            <div class="radio-sub">Minor track inspection 1–5 AM</div>
+          </div>
+        </label>
+        <label class="radio-option" data-value="2">
+          <input type="radio" name="maintenance" value="2" />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Track Renewal</div>
+            <div class="radio-sub">Station A → Station J</div>
+          </div>
+        </label>
+        <label class="radio-option" data-value="3">
+          <input type="radio" name="maintenance" value="3" />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Signaling Work</div>
+            <div class="radio-sub">Junction X → Station G</div>
+          </div>
+        </label>
+        <label class="radio-option" data-value="4">
+          <input type="radio" name="maintenance" value="4" />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Bottleneck (Lonavala)</div>
+            <div class="radio-sub">Critical steep climb section</div>
+          </div>
+        </label>
+        <label class="radio-option selected" data-value="5">
+          <input type="radio" name="maintenance" value="5" checked />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Multiple Blocks</div>
+            <div class="radio-sub">Heavy maintenance — default</div>
+          </div>
+        </label>
+        <label class="radio-option" data-value="6">
+          <input type="radio" name="maintenance" value="6" />
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label">Emergency Repair</div>
+            <div class="radio-sub">Full day — main line blocked</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <button class="run-btn" id="runBtn" onclick="runOptimization()">
+      <div class="spinner" id="spinner"></div>
+      <span class="btn-text"></span>
+    </button>
+  </aside>
+
+  <!-- ─── Main Panel ─── -->
+  <main class="main" id="mainPanel">
+    <!-- Placeholder -->
+    <div class="placeholder" id="placeholder">
+      <div class="placeholder-icon">🚄</div>
+      <h2>Ready to Optimize</h2>
+      <p>Configure the parameters on the left and click <strong>Run Optimization</strong> to see the schedule results.</p>
+    </div>
+
+    <!-- Results (hidden until run) -->
+    <div id="results" class="hidden">
+
+      <!-- Result Header -->
+      <div class="result-header" id="resultHeader"></div>
+
+      <!-- Metrics -->
+      <div class="metrics-grid" id="metricsGrid"></div>
+
+      <!-- Insights + Maintenance -->
+      <div class="insights-row" id="insightsRow"></div>
+
+      <!-- Bottlenecks -->
+      <div id="bottleneckSection"></div>
+
+      <!-- Train Schedules -->
+      <div id="trainSection"></div>
+
+      <!-- Interactions -->
+      <div id="interactionSection"></div>
+
+      <!-- Recommendations -->
+      <div id="recSection"></div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // ── Range slider ──
+  const slider = document.getElementById('delayFactor');
+  const valLabel = document.getElementById('delayValue');
+  slider.addEventListener('input', () => {
+    valLabel.textContent = parseFloat(slider.value).toFixed(1) + '×';
+    const pct = (slider.value / 2) * 100;
+    slider.style.background = `linear-gradient(90deg, var(--accent) ${pct}%, var(--border) ${pct}%)`;
+  });
+  slider.dispatchEvent(new Event('input'));
+
+  // ── Radio groups ──
+  function initRadioGroup(groupId) {
+    const group = document.getElementById(groupId);
+    group.querySelectorAll('.radio-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        opt.querySelector('input[type=radio]').checked = true;
+      });
+    });
+  }
+  initRadioGroup('scenarioGroup');
+  initRadioGroup('maintGroup');
+
+  // ── Helpers ──
+  function getSelected(name) {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? parseInt(el.value) : 1;
+  }
+
+  function typeClass(t) {
+    if (!t) return '';
+    const m = { superfast: 'badge-superfast', express: 'badge-express', mail_express: 'badge-mail', passenger: 'badge-passenger', freight: 'badge-freight', goods: 'badge-goods' };
+    return m[t.toLowerCase().replace(' ', '_')] || '';
+  }
+  function typeLabel(t) {
+    if (!t) return '';
+    return t.charAt(0).toUpperCase() + t.slice(1).replace('_', ' ');
+  }
+  function statusInfo(s) {
+    const m = { on_time: ['On Time', 'delay-on-time'], minor: ['Minor', 'delay-minor'], delayed: ['Delayed', 'delay-delayed'], late: ['Late', 'delay-late'] };
+    return m[s] || ['Unknown', ''];
+  }
+  function sevClass(s) {
+    return { critical: 'sev-critical', high: 'sev-high', moderate: 'sev-moderate', low: 'sev-low' }[s] || 'sev-low';
+  }
+  function sevBadgeStyle(s) {
+    const m = { critical: 'background:rgba(239,68,68,.15);color:#ef4444', high: 'background:rgba(249,115,22,.15);color:#f97316', moderate: 'background:rgba(234,179,8,.15);color:#eab308', low: 'background:rgba(34,197,94,.15);color:#22c55e' };
+    return m[s] || '';
+  }
+
+  // ── Expand rows ──
+  function toggleExpand(trainId) {
+    const row = document.getElementById('expand-' + trainId);
+    const btn = document.getElementById('expandbtn-' + trainId);
+    const tr  = document.getElementById('tr-' + trainId);
+    if (!row) return;
+    const hidden = row.classList.toggle('hidden');
+    tr.classList.toggle('expanded', !hidden);
+    btn.textContent = hidden ? '▶' : '▼';
+  }
+
+  // ── Main run ──
+  async function runOptimization() {
+    const btn = document.getElementById('runBtn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+    document.getElementById('statusBadge').textContent = 'Running…';
+    document.getElementById('statusBadge').style.color = 'var(--yellow)';
+    document.getElementById('statusBadge').style.background = 'rgba(234,179,8,.1)';
+    document.getElementById('statusBadge').style.borderColor = 'rgba(234,179,8,.2)';
+
+    const payload = {
+      delay_factor: parseFloat(slider.value),
+      scenario: getSelected('scenario'),
+      maintenance_preset: getSelected('maintenance'),
+    };
+
+    try {
+      const res = await fetch('/api/optimize/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      document.getElementById('placeholder').classList.add('hidden');
+      document.getElementById('results').classList.remove('hidden');
+
+      if (data.error) {
+        renderError(data.error);
+      } else {
+        renderResults(data);
+      }
+
+      document.getElementById('statusBadge').textContent = 'Done';
+      document.getElementById('statusBadge').style.color = 'var(--green)';
+      document.getElementById('statusBadge').style.background = 'rgba(34,197,94,.1)';
+      document.getElementById('statusBadge').style.borderColor = 'rgba(34,197,94,.2)';
+    } catch (e) {
+      renderError(e.message);
+      document.getElementById('statusBadge').textContent = 'Error';
+      document.getElementById('statusBadge').style.color = 'var(--red)';
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  }
+
+  function getCookie(name) {
+    const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : '';
+  }
+
+  function renderError(msg) {
+    document.getElementById('resultHeader').innerHTML = `<div class="error-box">⚠ ${msg}</div>`;
+    ['metricsGrid','insightsRow','bottleneckSection','trainSection','interactionSection','recSection'].forEach(id => document.getElementById(id).innerHTML = '');
+  }
+
+  function renderResults(d) {
+    // Header
+    document.getElementById('resultHeader').innerHTML = `
+      <div class="logo" style="width:36px;height:36px;font-size:18px;">🚂</div>
+      <div>
+        <div class="result-header-title">${d.scenario.date} — ${d.scenario.season} Season</div>
+        <div class="result-header-sub">Delay factor: <strong>${d.scenario.delay_factor}×</strong> &nbsp;|&nbsp; Status: <strong>${d.status}</strong></div>
+      </div>
+      <div class="solve-pill">⏱ Solved in ${d.solve_time}s</div>
+    `;
+
+    // Metrics
+    const punctColor = d.metrics.punctuality >= 75 ? 'var(--green)' : d.metrics.punctuality >= 50 ? 'var(--yellow)' : 'var(--red)';
+    document.getElementById('metricsGrid').innerHTML = `
+      <div class="metric-card orange">
+        <div class="metric-label">Total Delay</div>
+        <div class="metric-value">${d.metrics.total_delay}</div>
+        <div class="metric-sub">minutes system-wide</div>
+      </div>
+      <div class="metric-card blue">
+        <div class="metric-label">Avg Delay / Train</div>
+        <div class="metric-value">${d.metrics.avg_delay}</div>
+        <div class="metric-sub">minutes per train</div>
+      </div>
+      <div class="metric-card green">
+        <div class="metric-label">Punctuality</div>
+        <div class="metric-value" style="color:${punctColor}">${d.metrics.punctuality}%</div>
+        <div class="metric-sub">${d.metrics.on_time_trains} / ${d.metrics.total_trains} trains on time</div>
+      </div>
+      <div class="metric-card purple">
+        <div class="metric-label">Bottlenecks</div>
+        <div class="metric-value">${d.insights.bottlenecks}</div>
+        <div class="metric-sub">${d.insights.critical_bottlenecks} critical sections</div>
+      </div>
+    `;
+
+    // Insights + Maintenance side by side
+    let maintHtml = '';
+    if (d.maintenance.blocks.length > 0) {
+      maintHtml = d.maintenance.blocks.map(b => `
+        <div class="maint-block-item">
+          <span class="maint-section">${b.section}</span>
+          <span class="maint-time">${b.start} – ${b.end}</span>
+          <span class="maint-type-badge">${b.type}</span>
+          <span style="font-size:11px;color:var(--red);font-weight:600">+${b.delay_minutes}m</span>
+        </div>
+      `).join('');
+    } else {
+      maintHtml = '<div style="font-size:12px;color:var(--green)">✓ All tracks fully operational</div>';
+    }
+
+    document.getElementById('insightsRow').innerHTML = `
+      <div class="insight-item">
+        <div class="insight-label">Operational Insights</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+            <span style="color:var(--muted)">Weather Impact</span>
+            <span style="color:var(--text);font-weight:500">${d.insights.weather_impact}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+            <span style="color:var(--muted)">Maintenance Impact</span>
+            <span style="color:var(--text);font-weight:500">${d.insights.maintenance_impact}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+            <span style="color:var(--muted)">Premium Trains</span>
+            <span style="color:var(--text);font-weight:500">${d.insights.premium_performance}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+            <span style="color:var(--muted)">Max Bottleneck Delay</span>
+            <span style="color:var(--accent);font-weight:700">${d.insights.max_bottleneck_delay} min</span>
+          </div>
+        </div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-label">Maintenance — ${d.maintenance.name}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin:6px 0 8px">${d.maintenance.description}</div>
+        <div class="maint-blocks">${maintHtml}</div>
+      </div>
+    `;
+
+    // Bottlenecks
+    let bnHtml = '';
+    if (d.bottlenecks.length > 0) {
+      bnHtml = `
+        <div class="bottleneck-list">
+          ${d.bottlenecks.map(b => `
+            <div class="bottleneck-item">
+              <div class="bottleneck-sev ${sevClass(b.severity)}"></div>
+              <div class="bottleneck-section">${b.section}</div>
+              <div class="bottleneck-delay" style="color:${b.severity==='critical'?'var(--red)':b.severity==='high'?'var(--accent)':'var(--yellow)'}">${b.delay} min</div>
+              <div class="bottleneck-badge" style="${sevBadgeStyle(b.severity)}">${b.severity.toUpperCase()}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      bnHtml = '<div style="font-size:12px;color:var(--green);padding:10px 0">✓ No significant bottleneck delays</div>';
+    }
+    document.getElementById('bottleneckSection').innerHTML = `
+      <div>
+        <div class="section-header">🔴 Bottleneck Analysis <span>${d.bottlenecks.length} sections</span></div>
+        ${bnHtml}
+      </div>
+    `;
+
+    // Train Schedules
+    const rows = d.trains.map(train => {
+      const [statusLabel, statusCls] = statusInfo(train.status);
+      const stops = train.stops.map(s => {
+        const delColor = s.total_delay > 15 ? 'var(--red)' : s.total_delay > 5 ? 'var(--accent)' : s.total_delay > 0 ? 'var(--yellow)' : 'var(--green)';
+        const delText  = s.total_delay > 0 ? `+${s.total_delay} min` : 'On time';
+        return `
+          <div class="stop-card">
+            <div class="stop-name">${s.station}</div>
+            <div class="stop-times">
+              <span>Arr: <strong>${s.arrival}</strong></span>
+              <span>Dep: <strong>${s.departure}</strong></span>
+              <span>Dwell: ${s.dwell} min</span>
+            </div>
+            ${s.total_delay > 0 ? `<div class="stop-delay" style="background:rgba(239,68,68,.1);color:${delColor}">${delText}</div>` : `<div class="stop-delay" style="background:rgba(34,197,94,.1);color:var(--green)">${delText}</div>`}
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <tr id="tr-${train.id}" onclick="toggleExpand('${train.id}')">
+          <td>
+            <div class="train-name">${train.name}</div>
+          </td>
+          <td><span class="badge ${typeClass(train.type)}">${typeLabel(train.type)}</span></td>
+          <td style="color:var(--text);font-weight:600">${train.priority}</td>
+          <td><span class="delay-pill ${statusCls}">${train.total_delay > 0 ? '+' + train.total_delay + ' min' : '✓ On Time'}</span></td>
+          <td><span class="delay-pill ${statusCls}">${statusLabel}</span></td>
+          <td style="color:var(--muted);font-size:11px;">${train.stops.length} stops</td>
+          <td style="color:var(--muted);font-size:16px;" id="expandbtn-${train.id}">▶</td>
+        </tr>
+        <tr class="expand-row hidden" id="expand-${train.id}">
+          <td colspan="7">
+            <div class="expand-content">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">Station Schedule</div>
+              <div class="stops-grid">${stops}</div>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    document.getElementById('trainSection').innerHTML = `
+      <div>
+        <div class="section-header">🚆 Train Schedules <span>click row to expand</span></div>
+        <div class="train-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Train</th><th>Type</th><th>Priority</th><th>Delay</th><th>Status</th><th>Stops</th><th></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    // Interactions
+    const overtaking = d.interactions.overtaking || [];
+    const waiting    = d.interactions.waiting    || [];
+    const singleTrack = d.interactions.single_track || [];
+    let intHtml = '';
+
+    if (overtaking.length > 0) {
+      intHtml += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">Overtaking Events (${overtaking.length})</div>`;
+      intHtml += overtaking.map(e => `
+        <div class="interaction-item">
+          <div class="interaction-header">📍 ${e.station} @ ${e.time}</div>
+          <div class="interaction-body">
+            <span style="color:var(--accent)">${e.overtaking_train}</span> overtook
+            <span style="color:var(--muted)">${e.stopped_train}</span> — waited <strong>${e.wait_time_minutes} min</strong>
+          </div>
+        </div>
+      `).join('');
+    }
+    if (singleTrack.length > 0) {
+      intHtml += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:10px 0 6px;">Single-Track Conflicts (${singleTrack.length})</div>`;
+      intHtml += singleTrack.map(e => `
+        <div class="interaction-item">
+          <div class="interaction-header">⚙ Section: ${e.section}</div>
+          <div class="interaction-body">
+            <span style="color:var(--muted)">${e.waited_train}</span> waited for priority train
+            <span style="color:var(--accent)">${e.priority_train}</span>
+            &nbsp;(${e.wait_started} → ${e.wait_ended})
+          </div>
+        </div>
+      `).join('');
+    }
+
+    if (intHtml) {
+      document.getElementById('interactionSection').innerHTML = `
+        <div>
+          <div class="section-header">⚡ Train Interactions</div>
+          <div class="interaction-list">${intHtml}</div>
+        </div>
+      `;
+    } else {
+      document.getElementById('interactionSection').innerHTML = '';
+    }
+
+    // Recommendations
+    if (d.recommendations.length > 0) {
+      const recItems = d.recommendations.map(r => `
+        <div class="rec-item">
+          <div class="rec-icon">💡</div>
+          <span>${r}</span>
+        </div>
+      `).join('');
+      document.getElementById('recSection').innerHTML = `
+        <div>
+          <div class="section-header">💡 Recommendations <span>${d.recommendations.length} suggestions</span></div>
+          <div class="rec-list">${recItems}</div>
+        </div>
+      `;
+    } else {
+      document.getElementById('recSection').innerHTML = '';
+    }
+
+    // Scroll to top of results
+    document.getElementById('mainPanel').scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
 </body>
 </html>

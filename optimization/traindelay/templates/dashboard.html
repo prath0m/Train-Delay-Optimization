@@ -239,6 +239,45 @@
       border-radius: 13px; overflow: hidden;
       position: relative;
     }
+    /* Simulation HUD */
+    .sim-hud {
+      position: absolute; top: 10px; right: 12px;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(6,13,23,.85); border: 1px solid var(--border);
+      border-radius: 10px; padding: 7px 12px;
+      backdrop-filter: blur(8px); z-index: 10;
+    }
+    .sim-clock {
+      font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums;
+      color: #00d4ff; letter-spacing: 1px; min-width: 50px;
+    }
+    .sim-date-lbl { font-size: 9px; color: var(--muted); line-height: 1.4; }
+    .sim-sep { width: 1px; height: 30px; background: var(--border); margin: 0 2px; }
+    .sim-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 4px 9px;
+      font-size: 10.5px; color: var(--text); cursor: pointer; transition: all .15s;
+    }
+    .sim-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .sim-btn.active { background: rgba(59,130,246,.15); border-color: var(--blue); color: var(--blue); font-weight: 700; }
+    .sim-mode-pill {
+      font-size: 9px; font-weight: 700; padding: 2px 7px;
+      border-radius: 20px; letter-spacing: .4px;
+    }
+    .sim-progress {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      background: rgba(255,255,255,.04); pointer-events: none;
+    }
+    .sim-progress-fill {
+      height: 100%; background: linear-gradient(90deg,#3b82f6,#06b6d4);
+      transition: width .4s linear;
+    }
+    .train-tooltip {
+      position: absolute; pointer-events: none; z-index: 20;
+      background: rgba(6,13,23,.92); border: 1px solid var(--border);
+      border-radius: 7px; padding: 5px 9px; font-size: 10px;
+      color: var(--text); white-space: nowrap; display: none;
+    }
     .net-wrap::before {
       content: '';
       position: absolute; top: 0; left: 0; right: 0;
@@ -314,6 +353,26 @@
     .mb-time { color: var(--muted); }
     .mb-badge { padding: 2px 6px; border-radius: 5px; font-size: 9.5px; font-weight: 700; background: rgba(245,158,11,.12); color: var(--yellow); }
     .mb-delay { font-weight: 700; color: var(--red); }
+
+    /* ── Before / After Comparison ── */
+    .cmp-section { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+    .cmp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-top: 12px; }
+    .cmp-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 11px; padding: 13px 14px;
+      animation: fadeUp .4s ease both;
+    }
+    .cmp-name { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 10px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cmp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+    .cmp-lbl { font-size: 9.5px; color: var(--muted); width: 44px; flex-shrink: 0; }
+    .cmp-bar-wrap { flex: 1; background: rgba(255,255,255,.04); border-radius: 4px; height: 8px; overflow: hidden; }
+    .cmp-bar { height: 100%; border-radius: 4px; transition: width .6s ease; }
+    .cmp-val { font-size: 10px; font-weight: 700; width: 38px; text-align: right; flex-shrink: 0; }
+    .cmp-saved {
+      font-size: 9.5px; font-weight: 700; text-align: center; margin-top: 5px;
+      padding: 3px 8px; border-radius: 20px;
+    }
 
     /* ── SHAP ── */
     .shap-section {
@@ -557,6 +616,24 @@
       </div>
       <div class="net-wrap">
         <div class="net-scan"></div>
+
+        <!-- Simulation HUD -->
+        <div class="sim-hud">
+          <div>
+            <div class="sim-clock" id="simClock">--:--</div>
+            <div class="sim-date-lbl" id="simDateLbl">Demo Mode</div>
+          </div>
+          <div class="sim-sep"></div>
+          <button class="sim-btn" id="simPauseBtn" onclick="toggleSimPause()">⏸ Pause</button>
+          <button class="sim-btn active" id="simSpeedBtn" onclick="cycleSimSpeed()">10×</button>
+          <div>
+            <span class="sim-mode-pill" id="simModePill"
+              style="background:rgba(100,116,139,.15);color:var(--muted)">DEMO</span>
+          </div>
+        </div>
+        <div class="sim-progress"><div class="sim-progress-fill" id="simProgressFill" style="width:0%"></div></div>
+
+        <div class="train-tooltip" id="trainTooltip"></div>
         <svg id="networkSvg" viewBox="0 0 940 310" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <filter id="gBlue" x="-50%" y="-50%" width="200%" height="200%">
@@ -617,6 +694,12 @@
       <div class="mtr-section">
         <div class="sh">📊 System Metrics</div>
         <div class="mtr-grid" id="mtrGrid"></div>
+      </div>
+
+      <!-- Before / After Comparison -->
+      <div class="cmp-section">
+        <div class="sh">⚡ Delay Comparison — Before vs After Optimization</div>
+        <div class="cmp-grid" id="cmpGrid"></div>
       </div>
 
       <!-- Operational Insights + Maintenance -->
@@ -868,6 +951,14 @@ function initNetwork() {
   });
   buildTrainElements();
   startAnim();
+  // Start demo clock ticking
+  setInterval(() => {
+    if (simMode === 'demo' && !simPaused) {
+      simTime = (simTime + simSpeed / 60) % SIM_END;
+      if (simTime < SIM_START) simTime = SIM_START;
+      updateSimClock(simTime);
+    }
+  }, 1000 / 60);
 }
 
 function makeSvg(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
@@ -901,19 +992,151 @@ function routePos(route, p) {
   return { x: a.x + (b.x-a.x)*f, y: a.y + (b.y-a.y)*f };
 }
 
+// ═══════════════════════════════════════════════════
+// SIMULATION ENGINE
+// ═══════════════════════════════════════════════════
+const SIM_START = 180;   // 3:00 AM in minutes
+const SIM_END   = 900;   // 3:00 PM in minutes
+const SPEED_STEPS = [5, 10, 20, 60];
+let simMode    = 'demo';   // 'demo' | 'schedule'
+let simTime    = SIM_START;
+let simSpeed   = 10;       // simulation-minutes per real-second
+let simPaused  = false;
+let simLastTs  = null;
+let scheduleData = null;
+
+function parseTimeMins(str) {
+  if (!str || str === '--:--') return null;
+  const [h, m] = str.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function fmtMins(m) {
+  const h = Math.floor(m / 60) % 24;
+  const mm = Math.floor(m % 60);
+  return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+function getTrainPosAtTime(trainId, t) {
+  if (!scheduleData) return null;
+  const tDef = TRAINS[trainId];
+  if (!tDef) return null;
+  const trainSched = scheduleData.train_schedules?.[trainId]?.schedule;
+  if (!trainSched) return null;
+  const route = tDef.route;
+
+  for (let i = 0; i < route.length; i++) {
+    const stn = route[i];
+    const sched = trainSched[stn];
+    if (!sched) continue;
+    const arr = parseTimeMins(sched.arrival);
+    const dep = parseTimeMins(sched.departure);
+    if (arr === null || dep === null) continue;
+
+    // Dwelling at station
+    if (t >= arr && t <= dep) {
+      const pos = SPOS[stn];
+      return pos ? { x: pos.x, y: pos.y, status: 'stopped', station: stn } : null;
+    }
+    // Traveling to next station
+    if (i < route.length - 1) {
+      const nextStn = route[i + 1];
+      const nextSched = trainSched[nextStn];
+      if (!nextSched) continue;
+      const nextArr = parseTimeMins(nextSched.arrival);
+      if (nextArr === null) continue;
+      if (t > dep && t < nextArr && nextArr > dep) {
+        const f = (t - dep) / (nextArr - dep);
+        const a = SPOS[stn], b = SPOS[nextStn];
+        if (!a || !b) continue;
+        return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, status: 'running', station: null };
+      }
+    }
+  }
+  return null;
+}
+
+function updateSimClock(t) {
+  document.getElementById('simClock').textContent = fmtMins(t);
+  const pct = Math.max(0, Math.min(100, ((t - SIM_START) / (SIM_END - SIM_START)) * 100));
+  document.getElementById('simProgressFill').style.width = pct + '%';
+}
+
+function toggleSimPause() {
+  simPaused = !simPaused;
+  simLastTs = null;
+  const btn = document.getElementById('simPauseBtn');
+  btn.textContent = simPaused ? '▶ Play' : '⏸ Pause';
+  btn.classList.toggle('active', simPaused);
+}
+
+function cycleSimSpeed() {
+  const idx = SPEED_STEPS.indexOf(simSpeed);
+  simSpeed = SPEED_STEPS[(idx + 1) % SPEED_STEPS.length];
+  document.getElementById('simSpeedBtn').textContent = simSpeed + '×';
+}
+
 function startAnim() {
   if (rafId) cancelAnimationFrame(rafId);
-  function tick() {
-    Object.values(animStates).forEach(st => {
-      st.p = (st.p + st.spd) % 1;
-      const pos = routePos(st.route, st.p);
-      if (!pos || !st.el) return;
-      st.el.setAttribute('cx', pos.x);  st.el.setAttribute('cy', pos.y);
-      st.glEl.setAttribute('cx', pos.x); st.glEl.setAttribute('cy', pos.y);
-    });
+  function tick(ts) {
     rafId = requestAnimationFrame(tick);
+
+    if (simMode === 'schedule' && scheduleData && !simPaused) {
+      if (simLastTs !== null) {
+        const dt = (ts - simLastTs) / 1000;
+        simTime += dt * simSpeed;
+        if (simTime > SIM_END) simTime = SIM_START;
+      }
+      simLastTs = ts;
+      updateSimClock(simTime);
+
+      Object.entries(TRAINS).forEach(([id, def]) => {
+        const st = animStates[id];
+        if (!st?.el) return;
+        const pos = getTrainPosAtTime(id, simTime);
+        if (pos) {
+          st.el.setAttribute('cx', pos.x);   st.el.setAttribute('cy', pos.y);
+          st.glEl.setAttribute('cx', pos.x); st.glEl.setAttribute('cy', pos.y);
+          st.el.style.display = '';  st.glEl.style.display = '';
+          // Stopped at station: bigger pulse
+          st.el.setAttribute('r',   pos.status === 'stopped' ? '7' : '5');
+          st.glEl.setAttribute('r', pos.status === 'stopped' ? '14' : '9');
+          st.glEl.setAttribute('opacity', pos.status === 'stopped' ? '.35' : '.22');
+        } else {
+          st.el.style.display = 'none'; st.glEl.style.display = 'none';
+        }
+      });
+
+    } else {
+      // Demo loop
+      simLastTs = null;
+      Object.values(animStates).forEach(st => {
+        st.p = (st.p + st.spd) % 1;
+        const pos = routePos(st.route, st.p);
+        if (!pos || !st.el) return;
+        st.el.setAttribute('cx', pos.x);  st.el.setAttribute('cy', pos.y);
+        st.glEl.setAttribute('cx', pos.x); st.glEl.setAttribute('cy', pos.y);
+        st.el.style.display = ''; st.glEl.style.display = '';
+      });
+      if (!simPaused) updateSimClock(simTime);
+    }
   }
-  tick();
+  tick(performance.now());
+}
+
+function activateScheduleSim(data) {
+  scheduleData = data;
+  simMode = 'schedule';
+  simTime = SIM_START;
+  simLastTs = null;
+  simPaused = false;
+  document.getElementById('simPauseBtn').textContent = '⏸ Pause';
+  document.getElementById('simPauseBtn').classList.remove('active');
+  const pill = document.getElementById('simModePill');
+  pill.textContent = 'LIVE';
+  pill.style.background = 'rgba(16,185,129,.15)';
+  pill.style.color = '#10b981';
+  document.getElementById('simDateLbl').textContent = data.scenario?.date || 'Schedule Mode';
 }
 
 // ═══════════════════════════════════════════════════
@@ -998,6 +1221,7 @@ async function runOptimization() {
     else {
       renderResults(data);
       updateAnimSpeeds(data.trains);
+      activateScheduleSim(data);
       document.getElementById('shapBtn').disabled = false;
       document.getElementById('netStatus').textContent =
         `${data.metrics.total_trains} trains · ${data.scenario.date} · ${data.scenario.season}`;
@@ -1019,6 +1243,17 @@ function updateAnimSpeeds(trains) {
     const def = TRAINS[train.id];
     const pen = Math.min(train.total_delay/60, 0.4);
     animStates[train.id].spd = (def?def.sp:0.5)*0.00024*(1-pen);
+    // Update dot color based on delay status
+    const st = animStates[train.id];
+    if (st.el) {
+      const c = train.status === 'on_time' ? def?.color || '#10b981'
+               : train.status === 'minor'   ? '#f59e0b'
+               : train.status === 'delayed' ? '#f97316'
+               : '#ef4444';
+      st.el.setAttribute('fill', c);
+      st.glEl.setAttribute('fill', c);
+      st.color = c;
+    }
   });
 }
 
@@ -1078,6 +1313,34 @@ function renderResults(d) {
     countUp(document.getElementById('mv-pnc'), d.metrics.punctuality,  1, '%');
     countUp(document.getElementById('mv-bn'),  d.insights.bottlenecks, 0);
   }, 150);
+
+  // Before / After Comparison
+  if (d.comparison && d.comparison.length) {
+    const maxBefore = Math.max(...d.comparison.map(c => c.before_delay), 1);
+    document.getElementById('cmpGrid').innerHTML = d.comparison.map((c, i) => {
+      const bw = Math.round((c.before_delay / maxBefore) * 100);
+      const aw = Math.round((c.after_delay  / maxBefore) * 100);
+      const improved = c.saved > 0;
+      const savedCol = improved ? '#10b981' : '#64748b';
+      const savedTxt = improved
+        ? `<span class="cmp-saved" style="background:rgba(16,185,129,.12);color:#10b981">-${c.saved} min saved</span>`
+        : `<span class="cmp-saved" style="background:rgba(100,116,139,.08);color:var(--muted)">No change</span>`;
+      return `<div class="cmp-card" style="animation-delay:${i * 0.05}s">
+        <div class="cmp-name">${c.name}</div>
+        <div class="cmp-row">
+          <span class="cmp-lbl">Before</span>
+          <div class="cmp-bar-wrap"><div class="cmp-bar" style="width:${bw}%;background:#ef4444"></div></div>
+          <span class="cmp-val" style="color:#ef4444">${c.before_delay}m</span>
+        </div>
+        <div class="cmp-row">
+          <span class="cmp-lbl">After</span>
+          <div class="cmp-bar-wrap"><div class="cmp-bar" style="width:${aw}%;background:#10b981"></div></div>
+          <span class="cmp-val" style="color:#10b981">${c.after_delay}m</span>
+        </div>
+        ${savedTxt}
+      </div>`;
+    }).join('');
+  }
 
   // Insights + Maintenance
   let mbHtml = d.maintenance?.blocks?.length

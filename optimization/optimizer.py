@@ -288,6 +288,54 @@ class EnhancedIndianRailwayOptimizer:
 
         return base_dwell
 
+    def compute_baseline_delays(self) -> Dict:
+        """Estimate per-train delays WITHOUT optimization (weather + naive congestion)."""
+        conditions = self.weather_scenarios.get("conditions", {})
+        single_tracks = [t for t in self.tracks if t["tracks"] == 1]
+        baseline = {}
+
+        for train in self.trains:
+            train_id = train["id"]
+            weather_delay = 0
+
+            for i in range(len(train["route"]) - 1):
+                from_st = train["route"][i]
+                to_st = train["route"][i + 1]
+                section_key = f"{from_st}_to_{to_st}"
+
+                if section_key in conditions:
+                    wd = int(conditions[section_key]["additional_time"] * self.custom_delay_factor)
+                    if train["type"] == TrainType.SUPERFAST:
+                        wd = 0
+                    elif train["type"] == TrainType.EXPRESS:
+                        wd = int(wd * 0.2)
+                    elif train["type"] == TrainType.MAIL_EXPRESS:
+                        wd = int(wd * 0.5)
+                    weather_delay += wd
+
+            # Naive congestion: each other train sharing a single-track section adds buffer wait
+            congestion_delay = 0
+            for track in single_tracks:
+                if track["from"] in train["route"] and track["to"] in train["route"]:
+                    other_count = sum(
+                        1 for t in self.trains
+                        if t["id"] != train_id
+                        and track["from"] in t["route"]
+                        and track["to"] in t["route"]
+                    )
+                    buf = 3 if track.get("bottleneck", False) else 2
+                    congestion_delay += other_count * buf
+
+            baseline[train_id] = {
+                "weather_delay": weather_delay,
+                "congestion_delay": congestion_delay,
+                "total_delay": weather_delay + congestion_delay,
+                "type": train["type"].value,
+                "priority": train["priority"],
+            }
+
+        return baseline
+
     def add_weather_impact_constraints(self):
         conditions = self.weather_scenarios.get("conditions", {})
 
@@ -823,7 +871,17 @@ class EnhancedIndianRailwayOptimizer:
 
                     if (train_i["arrival"] < train_j["arrival"] and
                             train_i["departure"] > train_j["departure"] and
-                            train_j["priority"] > train_i["priority"]):
+                            train_j["priority"] > train_i["priority"] and
+                            train_i["arrival"] > 0):  # skip artifact entries at t=0
+
+                        stopped_train_obj = next(
+                            (t for t in self.trains if t["id"] == train_i["id"]), None
+                        )
+                        min_dwell_i = (
+                            self._get_minimum_dwell_time(stopped_train_obj, station)
+                            if stopped_train_obj else 2
+                        )
+                        extra_wait = max(0, train_i["dwell"] - min_dwell_i)
 
                         interactions["overtaking_events"].append({
                             "station": station,
@@ -833,7 +891,7 @@ class EnhancedIndianRailwayOptimizer:
                             "overtaking_train": train_j["id"],
                             "overtaking_train_type": train_j["type"],
                             "overtaking_train_priority": train_j["priority"],
-                            "wait_time_minutes": train_i["dwell"],
+                            "wait_time_minutes": extra_wait,
                             "time": self._format_time(train_i["arrival"])
                         })
 

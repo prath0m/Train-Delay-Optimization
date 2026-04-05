@@ -134,6 +134,22 @@ def run_optimization(request):
             for k, v in sorted(bottleneck_delays.items(), key=lambda x: x[1], reverse=True)
         ]
 
+        # Before-optimization baseline delays
+        baseline_delays = optimizer.compute_baseline_delays()
+        comparison = []
+        for train in sorted(optimizer.trains, key=lambda t: t['priority'], reverse=True):
+            tid = train['id']
+            b = baseline_delays.get(tid, {})
+            after_delay = train_schedules.get(tid, {}).get('total_delay', 0)
+            comparison.append({
+                'id': tid,
+                'name': tid.replace('_', ' '),
+                'type': b.get('type', ''),
+                'before_delay': b.get('total_delay', 0),
+                'after_delay': after_delay,
+                'saved': max(0, b.get('total_delay', 0) - after_delay),
+            })
+
         result = {
             'status': solution.get('status', 'unknown'),
             'solve_time': round(solution.get('solve_time', 0), 2),
@@ -161,6 +177,7 @@ def run_optimization(request):
             'trains': trains_data,
             'maintenance': maintenance_info,
             'recommendations': recommendations,
+            'comparison': comparison,
             'interactions': {
                 'overtaking': interactions.get('overtaking_events', []),
                 'waiting': interactions.get('waiting_events', [])[:5],

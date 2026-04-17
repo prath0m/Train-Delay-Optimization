@@ -530,6 +530,73 @@
       border-radius: 9px; padding: 13px; color: var(--red); font-size: 12.5px;
       margin: 18px 22px;
     }
+
+    /* ── Live Train Status Strip ── */
+    .live-strip {
+      padding: 10px 14px 6px;
+      border-top: 1px solid var(--border);
+      background: rgba(6,13,23,.6);
+    }
+    .live-strip-hd {
+      font-size: 9.5px; font-weight: 700; letter-spacing: .08em;
+      color: var(--muted); margin-bottom: 7px; text-transform: uppercase;
+    }
+    .live-trains {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .lt-card {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 5px 9px;
+      font-size: 10px; min-width: 140px; max-width: 210px;
+      transition: border-color .25s;
+    }
+    .lt-card.lt-stopped { border-color: rgba(249,115,22,.4); }
+    .lt-card.lt-running { border-color: rgba(16,185,129,.25); }
+    .lt-card.lt-idle    { opacity: .45; }
+    .lt-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .lt-dot.lt-pulse { animation: glow-pulse 1.2s ease-in-out infinite; }
+    .lt-info { flex: 1; min-width: 0; }
+    .lt-name { font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lt-status { color: var(--muted); font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lt-delay { flex-shrink: 0; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; }
+
+    /* ── SHAP Narrative ── */
+    .shap-narrative {
+      grid-column: 1 / -1;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 20px;
+    }
+    .shap-narrative .sh { margin-bottom: 12px; }
+    .narr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+    .narr-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 13px 14px;
+      animation: fadeUp .4s ease both;
+    }
+    .narr-hd {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .narr-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .narr-name { font-size: 11.5px; font-weight: 700; }
+    .narr-badge {
+      margin-left: auto; font-size: 9px; font-weight: 700;
+      padding: 2px 7px; border-radius: 5px;
+    }
+    .narr-verdict {
+      font-size: 11px; color: var(--text); line-height: 1.6;
+      margin-bottom: 9px; padding: 8px 10px;
+      background: rgba(59,130,246,.06); border-left: 3px solid var(--blue);
+      border-radius: 0 6px 6px 0;
+    }
+    .narr-reasons { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .narr-reason {
+      display: flex; align-items: flex-start; gap: 7px;
+      font-size: 10.5px; color: var(--muted); line-height: 1.5;
+    }
+    .narr-icon { flex-shrink: 0; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -675,6 +742,11 @@
           <div class="lg-item"><div class="lg-dot" style="background:#f59e0b;border-radius:3px"></div>Junction</div>
           <div class="lg-item"><div class="lg-dot" style="background:#3b82f6"></div>Major Station</div>
         </div>
+        <!-- Live train status strip -->
+        <div class="live-strip">
+          <div class="live-strip-hd">🚦 Live Train Status</div>
+          <div class="live-trains" id="liveTrains"></div>
+        </div>
       </div>
     </div>
 
@@ -734,6 +806,12 @@
         🧠 SHAP Explainability — Delay Driver Analysis
         <span class="cnt" id="shapCnt"></span>
       </div>
+      <!-- Human Decision Narrative (spans full width, shown after SHAP analysis) -->
+      <div class="shap-narrative hidden" id="shapNarrative" style="margin-bottom:14px">
+        <div class="sh">🗣️ Plain-English Decision Explanation — Why Was Each Train Stopped?</div>
+        <div class="narr-grid" id="narrGrid"></div>
+      </div>
+
       <div class="shap-grid">
         <!-- Global importance -->
         <div class="shap-card">
@@ -751,6 +829,7 @@
             <canvas id="chartGlobal"></canvas>
           </div>
         </div>
+
         <!-- Per-train breakdown -->
         <div class="shap-card">
           <div class="shap-ct">🎯 Per-Train SHAP Breakdown</div>
@@ -836,6 +915,7 @@ let animStates = {};
 let rafId = null;
 let globChart = null, trnChart = null;
 let shapData = null;
+let lastOptimData = null;   // stored for SHAP narrative
 
 // ═══════════════════════════════════════════════════
 // PARTICLE BACKGROUND
@@ -1106,6 +1186,8 @@ function startAnim() {
           st.el.style.display = 'none'; st.glEl.style.display = 'none';
         }
       });
+      // Update live strip every ~60 frames (throttle)
+      if (Math.floor(simTime * 10) % 6 === 0) updateLiveStrip(simTime);
 
     } else {
       // Demo loop
@@ -1126,6 +1208,20 @@ function startAnim() {
 
 function activateScheduleSim(data) {
   scheduleData = data;
+
+  // Build train_schedules lookup: { trainId: { schedule: { stationId: {arrival, departure} } } }
+  // API returns station names with spaces; SPOS uses underscores — normalize both ways.
+  scheduleData.train_schedules = {};
+  (data.trains || []).forEach(train => {
+    const sched = {};
+    (train.stops || []).forEach(stop => {
+      // Normalize: "Station C" → "Station_C", "Lonavala Hold Point" → "Lonavala_Hold_Point"
+      const key = stop.station.replace(/ /g, '_');
+      sched[key] = { arrival: stop.arrival, departure: stop.departure };
+    });
+    scheduleData.train_schedules[train.id] = { schedule: sched, meta: train };
+  });
+
   simMode = 'schedule';
   simTime = SIM_START;
   simLastTs = null;
@@ -1137,6 +1233,9 @@ function activateScheduleSim(data) {
   pill.style.background = 'rgba(16,185,129,.15)';
   pill.style.color = '#10b981';
   document.getElementById('simDateLbl').textContent = data.scenario?.date || 'Schedule Mode';
+
+  // Initialize live train status strip
+  initLiveStrip(data.trains);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1219,6 +1318,7 @@ async function runOptimization() {
 
     if (data.error) { renderError(data.error); }
     else {
+      lastOptimData = data;
       renderResults(data);
       updateAnimSpeeds(data.trains);
       activateScheduleSim(data);
@@ -1556,6 +1656,9 @@ function renderShap(data) {
     return `<option value="${id}">${id.replace(/_/g,' ')}${def?' ('+def.type+')':''}</option>`;
   }).join('');
   updateTrnShap();
+
+  // Generate human-readable narrative
+  generateShapNarrative(data, lastOptimData);
 }
 
 function updateTrnShap() {
@@ -1610,6 +1713,218 @@ function updateTrnShap() {
       }
     }
   });
+}
+
+// ═══════════════════════════════════════════════════
+// LIVE TRAIN STATUS STRIP
+// ═══════════════════════════════════════════════════
+let liveTrainMeta = {};   // { trainId: { name, color, type, delay, stops } }
+
+function initLiveStrip(trains) {
+  liveTrainMeta = {};
+  trains.forEach(tr => {
+    const def = TRAINS[tr.id];
+    liveTrainMeta[tr.id] = {
+      name: tr.name || tr.id.replace(/_/g,' '),
+      color: def?.color || '#64748b',
+      type: tr.type,
+      delay: tr.total_delay,
+      status: tr.status,
+    };
+  });
+  updateLiveStrip(SIM_START);
+}
+
+function updateLiveStrip(t) {
+  const container = document.getElementById('liveTrains');
+  if (!container || !scheduleData?.train_schedules) return;
+
+  const html = Object.entries(TRAINS).map(([id, def]) => {
+    const meta = liveTrainMeta[id];
+    const pos  = getTrainPosAtTime(id, t);
+    const color = meta?.color || def.color;
+    const delay = meta?.delay ?? 0;
+    const delayColor = delay === 0 ? '#10b981' : delay <= 5 ? '#f59e0b' : delay <= 15 ? '#f97316' : '#ef4444';
+    const delayTxt   = delay === 0 ? 'On Time' : `+${delay}m`;
+
+    let statusTxt, cardClass, dotPulse;
+    if (!pos) {
+      statusTxt = 'Not in service';
+      cardClass = 'lt-idle';
+      dotPulse  = '';
+    } else if (pos.status === 'stopped') {
+      const stLabel = SPOS[pos.station]?.label || pos.station?.replace(/_/g,' ') || '?';
+      statusTxt = `⏸ Stopped @ ${stLabel}`;
+      cardClass = 'lt-stopped';
+      dotPulse  = 'lt-pulse';
+    } else {
+      // Find which segment we're in
+      const sched = scheduleData.train_schedules[id]?.schedule;
+      const route  = def.route;
+      let fromLbl = '?', toLbl = '?';
+      if (sched && route) {
+        for (let i = 0; i < route.length - 1; i++) {
+          const s = route[i], ns = route[i+1];
+          const dep  = parseTimeMins(sched[s]?.departure);
+          const arr2 = parseTimeMins(sched[ns]?.arrival);
+          if (dep !== null && arr2 !== null && t > dep && t < arr2) {
+            fromLbl = SPOS[s]?.label  || s.replace(/_/g,' ');
+            toLbl   = SPOS[ns]?.label || ns.replace(/_/g,' ');
+            break;
+          }
+        }
+      }
+      statusTxt = `▶ ${fromLbl} → ${toLbl}`;
+      cardClass = 'lt-running';
+      dotPulse  = '';
+    }
+
+    const shortName = (meta?.name || id).split(' ').slice(0,3).join(' ');
+    return `<div class="lt-card ${cardClass}">
+      <div class="lt-dot ${dotPulse}" style="background:${color};box-shadow:0 0 6px ${color}88"></div>
+      <div class="lt-info">
+        <div class="lt-name">${shortName}</div>
+        <div class="lt-status">${statusTxt}</div>
+      </div>
+      <div class="lt-delay" style="background:${delayColor}22;color:${delayColor}">${delayTxt}</div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// SHAP HUMAN NARRATIVE
+// ═══════════════════════════════════════════════════
+function generateShapNarrative(shapData, optimData) {
+  if (!shapData || !optimData) return;
+
+  const narrGrid = document.getElementById('narrGrid');
+  const narrSection = document.getElementById('shapNarrative');
+  if (!narrGrid || !narrSection) return;
+
+  const featLabels = {
+    weather_delay:        'Weather',
+    maintenance_delay:    'Maintenance',
+    congestion_delay:     'Track Congestion',
+    operational_delay:    'Operations',
+    bottleneck_sections:  'Bottleneck Route',
+    steep_grade_sections: 'Steep Grades',
+    single_track_sections:'Single-Track Sections',
+    train_priority:       'Train Priority',
+    delay_factor:         'System Load',
+  };
+
+  const featIcons = {
+    weather_delay:        '🌧️',
+    maintenance_delay:    '🔧',
+    congestion_delay:     '🚦',
+    operational_delay:    '🛤️',
+    bottleneck_sections:  '⛰️',
+    steep_grade_sections: '📐',
+    single_track_sections:'↔️',
+    train_priority:       '⭐',
+    delay_factor:         '📊',
+  };
+
+  // Map train id → train data from optimize response
+  const trainMap = {};
+  (optimData.trains || []).forEach(tr => { trainMap[tr.id] = tr; });
+
+  // Map train id → interactions (who waited for who)
+  const waitedFor = {};   // trainId -> list of "waited for X"
+  const wasWaited = {};   // trainId -> list of "X waited for me"
+  (optimData.interactions?.waiting || []).forEach(ev => {
+    if (!waitedFor[ev.train]) waitedFor[ev.train] = [];
+    waitedFor[ev.train].push(ev.for || ev.reason || 'another train');
+  });
+  (optimData.interactions?.overtaking || []).forEach(ev => {
+    // ev: { faster, slower, section }
+    if (ev.faster && ev.slower) {
+      if (!waitedFor[ev.slower]) waitedFor[ev.slower] = [];
+      waitedFor[ev.slower].push(`${ev.faster.replace(/_/g,' ')} (overtook on ${(ev.section||'').replace(/_/g,' ')})`);
+    }
+  });
+
+  const cards = Object.entries(shapData.train_shap).map(([id, entry], i) => {
+    const def   = TRAINS[id];
+    const color = def?.color || '#64748b';
+    const tr    = trainMap[id];
+    const delay = entry.actual_delay || tr?.total_delay || 0;
+    const pred  = entry.predicted_delay || 0;
+    const base  = shapData.expected_value || 0;
+
+    // Status badge
+    const statusColor = delay === 0 ? '#10b981' : delay <= 5 ? '#f59e0b' : delay <= 15 ? '#f97316' : '#ef4444';
+    const statusTxt   = delay === 0 ? 'On Time' : delay <= 5 ? 'Minor' : delay <= 15 ? 'Delayed' : 'Late';
+
+    // Top SHAP contributors (positive = caused delay)
+    const contribs = shapData.feature_names
+      .map((f, idx) => ({ key: f, val: entry.shap_values[idx], fval: entry.feature_values[idx] }))
+      .filter(c => Math.abs(c.val) >= 0.5)
+      .sort((a, b) => b.val - a.val);   // most impactful first (positive = bad)
+
+    // Build plain-English verdict
+    let verdict;
+    const trainName = (tr?.name || id.replace(/_/g,' ')).split(' ').slice(0,3).join(' ');
+    const trainType = (tr?.type || def?.type || 'train').toLowerCase();
+
+    if (delay === 0) {
+      verdict = `${trainName} ran on time — the AI gave it clear priority through all sections.`;
+    } else {
+      const topCause = contribs[0];
+      const topLabel = topCause ? (featLabels[topCause.key] || topCause.key) : null;
+      const waited = waitedFor[id];
+
+      if (waited && waited.length) {
+        verdict = `${trainName} was held back because it had to yield to ${waited[0]} — a higher-priority train on the same track section. This added ${delay} minutes.`;
+      } else if (topLabel === 'Bottleneck Route') {
+        verdict = `${trainName} travels through the Lonavala mountain section — a single-track bottleneck. Only one train can use it at a time, forcing a ${delay}-minute wait.`;
+      } else if (topLabel === 'Weather') {
+        verdict = `Heavy weather conditions forced ${trainName} to slow down on affected sections, adding ${delay} minutes to its journey.`;
+      } else if (topLabel === 'Maintenance') {
+        verdict = `Scheduled track maintenance blocked ${trainName}'s route, requiring it to wait ${delay} minutes for the work window to close.`;
+      } else if (topLabel === 'Track Congestion') {
+        verdict = `Too many trains on the same section at the same time caused ${trainName} to wait ${delay} minutes for the line to clear.`;
+      } else if (topLabel === 'Train Priority') {
+        const dir = contribs[0]?.val < 0 ? 'its high priority helped it skip ahead' : `its lower priority meant faster trains went first`;
+        verdict = `Priority rules applied: ${dir}, resulting in a ${delay}-minute delay for ${trainName}.`;
+      } else {
+        verdict = `${trainName} accumulated ${delay} minutes of delay across its route, mainly due to ${topLabel || 'operational constraints'}.`;
+      }
+    }
+
+    // Reason bullets
+    const reasonBullets = contribs.slice(0, 4).map(c => {
+      const icon = featIcons[c.key] || '•';
+      const lbl  = featLabels[c.key] || c.key;
+      const dir  = c.val > 0 ? 'added' : 'saved';
+      const mins = Math.abs(c.val).toFixed(1);
+      let detail = '';
+      if (c.key === 'train_priority') detail = ` (priority ${c.fval?.toFixed ? c.fval.toFixed(1) : c.fval})`;
+      if (c.key === 'bottleneck_sections') detail = ` (${c.fval} bottleneck sections in route)`;
+      if (c.key === 'single_track_sections') detail = ` (${c.fval} single-track sections)`;
+      return `<li class="narr-reason"><span class="narr-icon">${icon}</span><span><strong>${lbl}${detail}</strong> — ${dir} ~${mins} min</span></li>`;
+    }).join('');
+
+    // If no meaningful contribs, show a clean message
+    const reasonsHtml = reasonBullets
+      ? `<ul class="narr-reasons">${reasonBullets}</ul>`
+      : `<ul class="narr-reasons"><li class="narr-reason"><span class="narr-icon">✅</span><span>No significant delay factors — this train ran freely.</span></li></ul>`;
+
+    return `<div class="narr-card" style="animation-delay:${i * 0.06}s">
+      <div class="narr-hd">
+        <div class="narr-dot" style="background:${color};box-shadow:0 0 8px ${color}88"></div>
+        <div class="narr-name">${trainName}</div>
+        <div class="narr-badge" style="background:${statusColor}22;color:${statusColor}">${statusTxt} · ${delay}m</div>
+      </div>
+      <div class="narr-verdict">${verdict}</div>
+      ${reasonsHtml}
+    </div>`;
+  });
+
+  narrGrid.innerHTML = cards.join('');
+  narrSection.classList.remove('hidden');
 }
 
 // ═══════════════════════════════════════════════════
